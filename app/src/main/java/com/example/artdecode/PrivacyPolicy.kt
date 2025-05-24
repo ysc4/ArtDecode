@@ -21,7 +21,8 @@ class PrivacyPolicy : AppCompatActivity() {
 
         val backButton : ImageButton = findViewById(R.id.backButton)
         backButton.setOnClickListener {
-            val intent = Intent(this, Settings::class.java)
+            val intent = Intent(this, MainActivity::class.java)
+            intent.putExtra("open_fragment", "settings")
             startActivity(intent)
             finish()
         }
