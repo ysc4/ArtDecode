@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context=".Terms">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/navigationBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="50dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:background="@android:color/white"
+            android:contentDescription="Back button"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:scaleType="centerInside"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0"
+            app:srcCompat="@drawable/left_arrow" />
+
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:fontFamily="@font/poppins_extrabold"
+            android:gravity="center"
+            android:text="Terms and Conditions"
+            android:textColor="@android:color/black"
+            android:textSize="24sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.362"
+            app:layout_constraintStart_toEndOf="@+id/backButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="84dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/navigationBar">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/termsTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="Terms and Conditions"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="Welcome to ArtDecode, a mobile application developed to analyze artworks using artificial intelligence. By accessing or using the app, you agree to comply with and be bound by the following Terms and Conditions. Please read them carefully. If you do not agree with these terms, you may not use the app."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsOne"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="1. Use of the App"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescOne"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="ArtDecode is intended for personal, non-commercial use to analyze and interpret the artistic styles of images you upload. You agree to use the app only for lawful purposes and in a manner that does not violate the rights of others or restrict their use and enjoyment of the app. Any misuse of the platform, including reverse engineering, harmful modification, or unauthorized data collection, is strictly prohibited."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsTwo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="2. Intellectual Property"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescTwo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="All content provided through ArtDecode, including the app design, logo, deep learning models, textual explanations, and UI components, are the intellectual property of the developers or their licensors. You are not permitted to reproduce, distribute, or modify any part of the app without prior written consent."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsThree"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="3. AI Explanations and Accuracy"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescThree"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="ArtDecode provides artistic style classifications and visual interpretations based on AI models trained on curated datasets. While we strive for accuracy, the app's outputs are estimations and should not be considered professional or definitive art analysis. The developers are not liable for any decisions made based on the app's results."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsFour"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="4. User Content"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescFour"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="You retain ownership of any image or content you upload. By using the app, you grant ArtDecode a temporary, limited license to process your content for analysis purposes. If you opt in to support model improvement, your data may be anonymized and used for research and refinement of the application."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsFive"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="5. Privacy and Data Use"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescFive"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="Your use of ArtDecode is also governed by our Privacy Policy. We are committed to protecting your personal information and using it responsibly. By agreeing to these Terms and Conditions, you acknowledge that you have read and understood our Privacy Policy."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsSix"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="6. Modifications to the App"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescSix"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="We reserve the right to modify or discontinue the app, temporarily or permanently, with or without notice. We may also update these Terms and Conditions at any time. Continued use of the app after changes indicates your acceptance of the revised terms."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/termsSeven"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="10dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="7. Disclaimer and Limitation of Liability"
+                android:textColor="@color/dark_gray"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/termsDescSeven"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:fontFamily="@font/poppins_regular"
+                android:text="ArtDecode is provided on an “as is” and “as available” basis. We make no warranties, express or implied, regarding the app’s performance, availability, or content accuracy. In no event shall the developers be liable for any direct, indirect, incidental, or consequential damages resulting from the use or inability to use the app."
+                android:textColor="@color/dark_gray"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
