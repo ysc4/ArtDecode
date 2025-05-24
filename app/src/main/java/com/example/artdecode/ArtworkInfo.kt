@@ -63,7 +63,6 @@ class ArtworkInfo : AppCompatActivity() {
         if (isFavorite) {
             // Set filled red heart
             favoriteButton.setImageResource(R.drawable.active_heart) // This should be your filled red heart
-            favoriteButton.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_red_dark))
         } else {
             // Set outlined heart
             favoriteButton.setImageResource(R.drawable.inactive_heart) // This should be your outlined heart
@@ -101,7 +100,7 @@ class ArtworkInfo : AppCompatActivity() {
             val artworkCard: View = layoutInflater.inflate(R.layout.item_artwork, container, false)
 
             // Find the ImageView in the card
-            val artworkImage = artworkCard.findViewById<ImageView>(R.id.artworkImage)
+            val artworkImage = artworkCard.findViewById<ImageView>(R.id.similarArtworkImage)
 
             // Set your artwork image using Glide, Picasso, or similar
             // Glide.with(this).load(artwork.getImageUrl()).into(artworkImage)

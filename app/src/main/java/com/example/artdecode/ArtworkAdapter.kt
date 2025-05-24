@@ -64,22 +64,44 @@ class ArtworkAdapter(
         fun bind(artworkItem: RecyclerViewItem.ArtworkItem) {
             val artwork = artworkItem.artwork
 
-            // Bind artwork data to views
-            // Update these IDs to match your actual item_collection.xml layout
-            itemView.findViewById<TextView>(R.id.artStyle)?.text = artwork.style
-            itemView.findViewById<TextView>(R.id.confidenceScore)?.text = "${artwork.confidence}% Confidence"
-
-            // Handle favorite icon if you have one
+            val artStyleTextView = itemView.findViewById<TextView>(R.id.artStyle)
+            val confidenceTextView = itemView.findViewById<TextView>(R.id.confidenceScore)
             val favoriteIcon = itemView.findViewById<ImageView>(R.id.favoriteButton)
+            val artworkImage = itemView.findViewById<ImageView>(R.id.artworkImage)
+
+            artStyleTextView?.text = artwork.style
+            confidenceTextView?.text = "${artwork.confidence}% Confidence"
+
+            // Set the favorite icon based on state
             favoriteIcon?.setImageResource(
                 if (artwork.isFavorite) R.drawable.active_heart
                 else R.drawable.inactive_heart
             )
 
-            // Load artwork image if you have an ImageView
-            val artworkImage = itemView.findViewById<ImageView>(R.id.artworkImage)
-            // You'll need to implement image loading here, for example with Glide:
+            // Load artwork image if needed
             // Glide.with(itemView.context).load(artwork.imageUrl).into(artworkImage)
+
+            // Favorite button toggle logic
+            favoriteIcon?.setOnClickListener {
+                val newFavoriteState = !artwork.isFavorite
+                artwork.isFavorite = newFavoriteState
+
+                // Update the icon
+                favoriteIcon.setImageResource(
+                    if (newFavoriteState) R.drawable.active_heart
+                    else R.drawable.inactive_heart
+                )
+
+                // Persist change using SharedPreferences
+                val sharedPref = itemView.context.getSharedPreferences("artwork_preferences", android.content.Context.MODE_PRIVATE)
+                with(sharedPref.edit()) {
+                    putBoolean("favorite_${artwork.id}", newFavoriteState)
+                    apply()
+                }
+
+                // Optional: Notify adapter if you want to refresh the whole list
+                // notifyItemChanged(adapterPosition) // <-- if needed
+            }
 
             itemView.setOnClickListener { onItemClick(artworkItem) }
         }

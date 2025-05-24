@@ -47,6 +47,12 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        val openFragment = intent.getStringExtra("open_fragment")
+        if (openFragment == "settings") {
+            val bottomNav: BottomNavigationView = findViewById(R.id.bottomNavigationView)
+            bottomNav.selectedItemId = R.id.navSettings
+        }
     }
 
     private fun setFragment(fragment : Fragment) =

@@ -1,5 +1,6 @@
 package com.example.artdecode
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -77,42 +78,14 @@ class Home : Fragment() {
         items.add(RecyclerViewItem.Header("My Collections"))
 
         // Add artworks
+        val sharedPref = requireContext().getSharedPreferences("artwork_preferences", Context.MODE_PRIVATE)
+
         val artworks = listOf(
-            Artwork(
-                id = 1,
-                imageUrl = "artwork1.jpg",
-                style = "Impressionism",
-                confidence = 89.91f,
-                isFavorite = true
-            ),
-            Artwork(
-                id = 2,
-                imageUrl = "artwork2.jpg",
-                style = "Expressionism",
-                confidence = 74.55f,
-                isFavorite = true
-            ),
-            Artwork(
-                id = 3,
-                imageUrl = "artwork3.jpg",
-                style = "Baroque",
-                confidence = 98.04f,
-                isFavorite = false
-            ),
-            Artwork(
-                id = 4,
-                imageUrl = "artwork4.jpg",
-                style = "Abstract",
-                confidence = 90.11f,
-                isFavorite = true
-            ),
-            Artwork(
-                id = 5,
-                imageUrl = "artwork4.jpg",
-                style = "Abstract",
-                confidence = 93.12f,
-                isFavorite = true
-            )
+            Artwork(1, "artwork1.jpg", "Impressionism", 89.91f, sharedPref.getBoolean("favorite_1", false)),
+            Artwork(2, "artwork2.jpg", "Expressionism", 74.55f, sharedPref.getBoolean("favorite_2", false)),
+            Artwork(3, "artwork3.jpg", "Baroque", 98.04f, sharedPref.getBoolean("favorite_3", false)),
+            Artwork(4, "artwork4.jpg", "Abstract", 90.11f, sharedPref.getBoolean("favorite_4", false)),
+            Artwork(5, "artwork5.jpg", "Abstract", 93.12f, sharedPref.getBoolean("favorite_5", false))
         )
 
         artworks.forEach { artwork ->
@@ -194,5 +167,5 @@ data class Artwork(
     val imageUrl: String,
     val style: String,
     val confidence: Float,
-    val isFavorite: Boolean
+    var isFavorite: Boolean
 )
