@@ -12,13 +12,13 @@
     tools:context=".Login">
 
     <EditText
-        android:id="@+id/username"
+        android:id="@+id/email"
         android:layout_width="335dp"
         android:layout_height="50dp"
         android:layout_marginTop="44dp"
         android:fontFamily="@font/poppins_regular"
         android:hint="@string/prompt_email"
-        android:inputType="textEmailAddress"
+        android:inputType="text"
         android:selectAllOnFocus="true"
         android:background="@drawable/rounded_input_border"
         android:padding="10dp"
@@ -35,14 +35,13 @@
         android:background="@drawable/rounded_input_border"
         android:fontFamily="@font/poppins_regular"
         android:hint="@string/prompt_password"
-        android:imeActionLabel="@string/action_sign_in_short"
         android:imeOptions="actionDone"
         android:inputType="textPassword"
         android:padding="10dp"
         android:selectAllOnFocus="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/username" />
+        app:layout_constraintTop_toBottomOf="@+id/email" />
 
     <ProgressBar
         android:id="@+id/loading"
@@ -71,20 +70,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <CheckBox
-        android:id="@+id/checkBox"
-        android:layout_width="147dp"
-        android:layout_height="38dp"
-        android:layout_marginTop="4dp"
-        android:fontFamily="@font/poppins_light"
-        android:text="Remember Me"
-        app:layout_constraintBottom_toTopOf="@+id/loginBtn"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.103"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/password"
-        app:layout_constraintVertical_bias="0.032" />
 
     <Button
         android:id="@+id/loginBtn"
@@ -122,5 +107,36 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/googleLoginBtn" />
+
+    <TextView
+        android:id="@+id/errorHandlingText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="92dp"
+        android:fontFamily="@font/poppins_light"
+        android:text="Wrong Password"
+        android:textAlignment="textStart"
+        android:textColor="@color/red"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toTopOf="@+id/loginBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.074"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/password"
+        app:layout_constraintVertical_bias="0.578" />
+
+    <ImageButton
+        android:id="@+id/togglePasswordVisibility"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:scaleType="centerInside"
+        app:layout_constraintBottom_toBottomOf="@+id/password"
+        app:layout_constraintEnd_toEndOf="@+id/password"
+        app:layout_constraintHorizontal_bias="0.965"
+        app:layout_constraintStart_toStartOf="@+id/password"
+        app:layout_constraintTop_toTopOf="@+id/password"
+        app:layout_constraintVertical_bias="0.4"
+        app:srcCompat="@drawable/eye" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

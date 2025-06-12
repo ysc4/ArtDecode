@@ -12,7 +12,7 @@
         android:id="@+id/navigationBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="28dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
@@ -145,9 +145,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="15dp"
                 android:layout_marginRight="20dp"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="10dp"
                 android:fontFamily="@font/poppins_bold"
                 android:text="Detected Artistic Style"
                 android:textColor="@color/black"
@@ -241,7 +241,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="20dp"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="15dp"
                 android:fontFamily="@font/poppins_medium"
                 android:text="Abstract Expressionism is a post-1940s art movement focused on spontaneous, emotional expression through non-representational forms. Artists used bold colors and gestures to convey inner feelings. It emphasized the act of painting as a form of personal expression."
                 android:textColor="@color/black"
@@ -260,7 +260,7 @@
 
             <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="120dp"
+                android:layout_height="110dp"
                 android:layout_marginTop="10dp"
                 android:layout_marginBottom="20dp">
 
@@ -281,7 +281,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="130dp"
                 android:layout_marginEnd="50dp"
-                android:layout_marginBottom="30dp"
+                android:layout_marginBottom="100dp"
                 android:background="@drawable/rounded_button"
                 android:fontFamily="@font/poppins_semibold"
                 android:padding="5dp"

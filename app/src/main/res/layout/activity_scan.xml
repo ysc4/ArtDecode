@@ -66,13 +66,13 @@
     <!-- Capture/Scan Button (Top circular button) -->
     <ImageView
         android:id="@+id/captureButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:layout_marginBottom="12dp"
         android:background="@drawable/circle_background"
         android:padding="16dp"
-        android:src="@drawable/scan"
         android:scaleType="centerInside"
+        android:src="@drawable/scan"
         app:layout_constraintBottom_toTopOf="@+id/galleryButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -80,9 +80,9 @@
     <!-- Gallery/Album Button (Bottom circular button) -->
     <ImageView
         android:id="@+id/galleryButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_marginBottom="30dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="40dp"
         android:background="@drawable/circle_background"
         android:padding="16dp"
         android:scaleType="centerInside"
