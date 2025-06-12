@@ -1,14 +1,50 @@
 <resources>
     <string name="app_name">ArtDecode</string>
-    <string name="title_activity_login">LoginActivity</string>
+
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
-    <string name="action_sign_in">Sign in or register</string>
-    <string name="action_sign_in_short">Sign in</string>
-    <string name="welcome">"Welcome !"</string>
-    <string name="invalid_username">Not a valid username</string>
-    <string name="invalid_password">Password must be >5 characters</string>
-    <string name="login_failed">"Login failed"</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- Authentication Error Messages -->
+    <string name="incorrect_email">Please enter a valid email address</string>
+    <string name="incorrect_password">Incorrect password. Please try again</string>
+
+    <!-- Additional error messages you might want to add -->
+    <string name="email_required">Email is required</string>
+    <string name="password_required">Password is required</string>
+    <string name="invalid_email">Please enter a valid email address</string>
+    <string name="weak_password">Password must be at least 6 characters long</string>
+    <string name="passwords_dont_match">Passwords do not match</string>
+    <string name="username_required">Username is required</string>
+    <string name="username_too_short">Username must be at least 3 characters long</string>
+    <string name="confirm_password_required">Please confirm your password</string>
+
+    <!-- Firebase Auth Error Messages -->
+    <string name="auth_failed">Authentication failed. Please try again</string>
+    <string name="user_not_found">No account found with this email address</string>
+    <string name="wrong_password">Incorrect password. Please try again</string>
+    <string name="email_already_exists">An account with this email already exists</string>
+    <string name="too_many_requests">Too many failed attempts. Please try again later</string>
+    <string name="network_error">Network error. Please check your connection and try again</string>
+
+    <!-- Google Sign-In Error Messages -->
+    <string name="google_signin_cancelled">Google Sign-In was cancelled</string>
+    <string name="google_signin_failed">Google Sign-In failed</string>
+    <string name="no_google_accounts">No Google accounts found on this device</string>
+    <string name="google_auth_failed">Google authentication failed</string>
+    <string name="google_config_error">Google Sign-In configuration error</string>
+
+    <!-- Success Messages -->
+    <string name="account_created_success">Account created successfully!</string>
+    <string name="login_success">Login successful!</string>
+
+    <!-- Loading Messages -->
+    <string name="creating_account">Creating account...</string>
+    <string name="signing_in">Signing in...</string>
+
+    <!-- Button Text -->
+    <string name="sign_up">Sign Up</string>
+    <string name="login">Login</string>
+    <string name="google_sign_in">Continue with Google</string>
+
+    <!-- Placeholder for Google Web Client ID (you'll need to replace this with your actual client ID) -->
+    <string name="default_web_client_id">YOUR_GOOGLE_WEB_CLIENT_ID_HERE</string>
 </resources>
