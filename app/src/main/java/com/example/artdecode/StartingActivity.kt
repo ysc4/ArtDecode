@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.artdecode.Login
+import kotlin.jvm.java
 
 class StartingActivity : AppCompatActivity() {
     private lateinit var startButton: Button
@@ -24,7 +26,7 @@ class StartingActivity : AppCompatActivity() {
         startButton = findViewById(R.id.startButton)
 
         startButton.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
+            val intent = Intent(this, Login::class.java)
             startActivity(intent)
             finish()
         }
