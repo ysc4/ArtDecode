@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1068502476521",
+    "project_id": "artdecodeproject",
+    "storage_bucket": "artdecodeproject.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068502476521:android:5573e22080ec39fcb0b278",
+        "android_client_info": {
+          "package_name": "com.example.artdecode"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1068502476521-49gq1ed520e86e3e9ekhtospqdek396b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.artdecode",
+            "certificate_hash": "e3bb0ccf960ebfd0984d031bdb30e2f91d376be5"
+          }
+        },
+        {
+          "client_id": "1068502476521-o8bdee3c1lttdr3hs98qvbf3pp7vqoub.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDO5gBEK4MuRh5ynHEuvksMwkBem6wz59Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1068502476521-o8bdee3c1lttdr3hs98qvbf3pp7vqoub.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
