@@ -2,14 +2,14 @@ package com.example.artdecode
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.graphics.Rect
 
 /**
  * A simple [Fragment] subclass.
@@ -30,14 +30,11 @@ class Home : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        val view = inflater.inflate(R.layout.fragment_home, container, false)
 
         setupRecyclerView(view)
         loadArtworks()
+        return view
     }
 
     private fun setupRecyclerView(view: View) {
@@ -62,6 +59,7 @@ class Home : Fragment() {
                     // Handle artwork click
                     startActivity(Intent(requireContext(), ArtworkInfo::class.java))
                 }
+
                 is RecyclerViewItem.Header -> {
                     // Handle header click if needed
                 }
@@ -78,14 +76,45 @@ class Home : Fragment() {
         items.add(RecyclerViewItem.Header("My Collections"))
 
         // Add artworks
-        val sharedPref = requireContext().getSharedPreferences("artwork_preferences", Context.MODE_PRIVATE)
+        val sharedPref =
+            requireContext().getSharedPreferences("artwork_preferences", Context.MODE_PRIVATE)
 
         val artworks = listOf(
-            Artwork(1, "artwork1.jpg", "Impressionism", 89.91f, sharedPref.getBoolean("favorite_1", false)),
-            Artwork(2, "artwork2.jpg", "Expressionism", 74.55f, sharedPref.getBoolean("favorite_2", false)),
-            Artwork(3, "artwork3.jpg", "Baroque", 98.04f, sharedPref.getBoolean("favorite_3", false)),
-            Artwork(4, "artwork4.jpg", "Abstract", 90.11f, sharedPref.getBoolean("favorite_4", false)),
-            Artwork(5, "artwork5.jpg", "Abstract", 93.12f, sharedPref.getBoolean("favorite_5", false))
+            Artwork(
+                1,
+                "artwork1.jpg",
+                "Impressionism",
+                89.91f,
+                sharedPref.getBoolean("favorite_1", false)
+            ),
+            Artwork(
+                2,
+                "artwork2.jpg",
+                "Expressionism",
+                74.55f,
+                sharedPref.getBoolean("favorite_2", false)
+            ),
+            Artwork(
+                3,
+                "artwork3.jpg",
+                "Baroque",
+                98.04f,
+                sharedPref.getBoolean("favorite_3", false)
+            ),
+            Artwork(
+                4,
+                "artwork4.jpg",
+                "Abstract",
+                90.11f,
+                sharedPref.getBoolean("favorite_4", false)
+            ),
+            Artwork(
+                5,
+                "artwork5.jpg",
+                "Abstract",
+                93.12f,
+                sharedPref.getBoolean("favorite_5", false)
+            )
         )
 
         artworks.forEach { artwork ->
@@ -113,7 +142,12 @@ class GridSpacingItemDecoration(
     private val includeEdge: Boolean
 ) : RecyclerView.ItemDecoration() {
 
-    override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+    override fun getItemOffsets(
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView,
+        state: RecyclerView.State
+    ) {
         val position = parent.getChildAdapterPosition(view)
         val layoutManager = parent.layoutManager as? GridLayoutManager
         val spanSize = layoutManager?.spanSizeLookup?.getSpanSize(position) ?: 1
