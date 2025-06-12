@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
@@ -24,10 +25,6 @@
         <activity
             android:name=".SignUp"
             android:exported="false" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false"
-            android:label="@string/title_activity_login" />
         <activity
             android:name=".Scan"
             android:exported="false"
