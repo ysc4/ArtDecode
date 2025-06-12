@@ -1,12 +1,14 @@
 package com.example.artdecode
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -25,12 +27,31 @@ class ArtworkInfo : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_artwork_info)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        setContentView(R.layout.activity_artwork_info) // Make sure you have this layout
+
+        val imageView: ImageView = findViewById(R.id.artworkImage) // Example ImageView ID
+        var imageUri: Uri? = null
+
+        // Check for URI from camera capture
+        val capturedImageUriString = intent.getStringExtra("CAPTURED_IMAGE_URI")
+        if (capturedImageUriString != null) {
+            imageUri = Uri.parse(capturedImageUriString)
+        } else {
+            // Check for URI from gallery selection
+            val selectedImageUriString = intent.getStringExtra("SELECTED_IMAGE_URI")
+            if (selectedImageUriString != null) {
+                imageUri = Uri.parse(selectedImageUriString)
+            }
+        }
+
+        if (imageUri != null) {
+            // Load the image into an ImageView
+            imageView.setImageURI(imageUri)
+            // Add further processing for the image if needed
+            Toast.makeText(this, "Image loaded: $imageUri", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "No image URI found in Intent.", Toast.LENGTH_LONG).show()
+            // Handle the case where no URI was passed (e.g., error or direct navigation)
         }
 
         setupSimilarArtworks()
