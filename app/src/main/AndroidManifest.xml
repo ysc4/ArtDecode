@@ -20,32 +20,32 @@
         android:theme="@style/Theme.ArtDecode"
         tools:targetApi="31" >
         <activity
-            android:name=".Login"
+            android:name=".presentation.login.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".SignUp"
+            android:name=".presentation.signup.SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".Scan"
+            android:name=".presentation.scan.ScanActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity
-            android:name=".Terms"
+            android:name=".presentation.terms.TermsActivity"
             android:exported="false" />
         <activity
-            android:name=".PrivacyPolicy"
+            android:name=".presentation.privacy.PrivacyPolicyActivity"
             android:exported="false" />
         <activity
-            android:name=".Report"
+            android:name=".presentation.report.ReportActivity"
             android:exported="false" />
         <activity
-            android:name=".ArtworkInfo"
+            android:name=".presentation.artworkinfo.ArtworkInfoActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".presentation.main.MainActivity"
             android:exported="false" />
         <activity
-            android:name=".StartingActivity"
+            android:name=".presentation.starting.StartingActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

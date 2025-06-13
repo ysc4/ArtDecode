@@ -25,7 +25,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/editTextTextEmailAddress"
+        android:id="@+id/emailInput"
         android:layout_width="335dp"
         android:layout_height="50dp"
         android:layout_marginTop="36dp"
@@ -40,7 +40,7 @@
         app:layout_constraintTop_toBottomOf="@+id/textView10" />
 
     <EditText
-        android:id="@+id/editTextText"
+        android:id="@+id/usernameInput"
         android:layout_width="335dp"
         android:layout_height="50dp"
         android:layout_marginTop="20dp"
@@ -52,10 +52,10 @@
         android:padding="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextTextEmailAddress" />
+        app:layout_constraintTop_toBottomOf="@+id/emailInput" />
 
     <EditText
-        android:id="@+id/editTextTextPassword"
+        android:id="@+id/passwordInput"
         android:layout_width="335dp"
         android:layout_height="50dp"
         android:layout_marginTop="20dp"
@@ -67,10 +67,10 @@
         android:padding="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextText" />
+        app:layout_constraintTop_toBottomOf="@+id/usernameInput" />
 
     <EditText
-        android:id="@+id/editTextTextPassword2"
+        android:id="@+id/repeatPassword"
         android:layout_width="335dp"
         android:layout_height="50dp"
         android:layout_marginTop="20dp"
@@ -82,7 +82,7 @@
         android:padding="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextTextPassword" />
+        app:layout_constraintTop_toBottomOf="@+id/passwordInput" />
 
     <TextView
         android:id="@+id/errorTextView"
@@ -96,7 +96,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextTextPassword2" />
+        app:layout_constraintTop_toBottomOf="@+id/repeatPassword" />
 
     <ProgressBar
         android:id="@+id/loadingProgressBar"
@@ -109,7 +109,7 @@
         app:layout_constraintTop_toBottomOf="@+id/errorTextView" />
 
     <Button
-        android:id="@+id/button3"
+        android:id="@+id/signUpConfirm"
         android:layout_width="335dp"
         android:layout_height="50dp"
         android:layout_marginTop="32dp"
@@ -122,7 +122,7 @@
         app:layout_constraintTop_toBottomOf="@+id/loadingProgressBar" />
 
     <TextView
-        android:id="@+id/loginLinkTextView"
+        android:id="@+id/loginLink"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -133,6 +133,6 @@
         android:focusable="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/button3" />
+        app:layout_constraintTop_toBottomOf="@+id/signUpConfirm" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

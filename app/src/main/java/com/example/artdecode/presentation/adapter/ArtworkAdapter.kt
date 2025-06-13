@@ -1,4 +1,4 @@
-package com.example.artdecode
+package com.example.artdecode.presentation.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -8,9 +8,12 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.artdecode.R
+import com.example.artdecode.data.model.RecyclerViewItem
 
 class ArtworkAdapter(
-    private val onItemClick: (RecyclerViewItem) -> Unit
+    private val onItemClick: (Int) -> Unit,
+    private val onFavoriteClick: (Int) -> Unit
 ) : ListAdapter<RecyclerViewItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
@@ -35,7 +38,7 @@ class ArtworkAdapter(
             VIEW_TYPE_ARTWORK -> {
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.item_collection, parent, false)
-                ArtworkViewHolder(view, onItemClick)
+                ArtworkViewHolder(view, onItemClick, onFavoriteClick)
             }
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
         }
@@ -58,7 +61,8 @@ class ArtworkAdapter(
 
     class ArtworkViewHolder(
         itemView: View,
-        private val onItemClick: (RecyclerViewItem) -> Unit
+        private val onItemClick: (Int) -> Unit,
+        private val onFavoriteClick: (Int) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(artworkItem: RecyclerViewItem.ArtworkItem) {
@@ -78,32 +82,15 @@ class ArtworkAdapter(
                 else R.drawable.inactive_heart
             )
 
-            // Load artwork image if needed
-            // Glide.with(itemView.context).load(artwork.imageUrl).into(artworkImage)
-
-            // Favorite button toggle logic
+            // Favorite button click
             favoriteIcon?.setOnClickListener {
-                val newFavoriteState = !artwork.isFavorite
-                artwork.isFavorite = newFavoriteState
-
-                // Update the icon
-                favoriteIcon.setImageResource(
-                    if (newFavoriteState) R.drawable.active_heart
-                    else R.drawable.inactive_heart
-                )
-
-                // Persist change using SharedPreferences
-                val sharedPref = itemView.context.getSharedPreferences("artwork_preferences", android.content.Context.MODE_PRIVATE)
-                with(sharedPref.edit()) {
-                    putBoolean("favorite_${artwork.id}", newFavoriteState)
-                    apply()
-                }
-
-                // Optional: Notify adapter if you want to refresh the whole list
-                // notifyItemChanged(adapterPosition) // <-- if needed
+                onFavoriteClick(artwork.id)
             }
 
-            itemView.setOnClickListener { onItemClick(artworkItem) }
+            // Item click
+            itemView.setOnClickListener {
+                onItemClick(artwork.id)
+            }
         }
     }
 
