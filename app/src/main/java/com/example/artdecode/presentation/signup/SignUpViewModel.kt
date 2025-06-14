@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.tasks.await
 class SignUpViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
+    private val database = FirebaseDatabase.getInstance()
 
     // UI State flows
     private val _isLoading = MutableStateFlow(false)
@@ -44,6 +46,13 @@ class SignUpViewModel : ViewModel() {
     private val _toastMessage = MutableStateFlow<Event<String>?>(null)
     val toastMessage: StateFlow<Event<String>?> = _toastMessage.asStateFlow()
 
+    // Data class for user information
+    data class UserData(
+        val email: String = "",
+        val username: String = "",
+        val createdAt: Long = System.currentTimeMillis()
+    )
+
     fun signUp(email: String, username: String, password: String, confirmPassword: String) {
         if (!validateInputs(email, username, password, confirmPassword)) return
 
@@ -52,32 +61,79 @@ class SignUpViewModel : ViewModel() {
             _errorMessage.value = null
 
             try {
-                // Create user
+                // Create user with email and password
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user
 
                 if (user != null) {
-                    // Update profile
+                    // Update Firebase Auth profile
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setDisplayName(username)
                         .build()
 
                     try {
                         user.updateProfile(profileUpdates).await()
-                        _toastMessage.value = Event("Account created successfully!")
                     } catch (e: Exception) {
-                        _toastMessage.value = Event("Account created. Profile update failed.")
+                        // Profile update failed, but continue with database storage
                     }
 
-                    _navigateToLogin.value = Event(Unit)
+                    // Store user data in Realtime Database
+                    val userData = UserData(
+                        email = email,
+                        username = username,
+                        createdAt = System.currentTimeMillis()
+                    )
+
+                    try {
+                        database.reference
+                            .child("users")
+                            .child(user.uid)
+                            .setValue(userData)
+                            .await()
+
+                        _toastMessage.value = Event("Account created successfully!")
+                        _navigateToLogin.value = Event(Unit)
+
+                    } catch (e: Exception) {
+                        // Database storage failed, but auth user was created
+                        _errorMessage.value = "Account created but failed to save user data: ${e.message}"
+                        _navigateToLogin.value = Event(Unit)
+                    }
+
                 } else {
                     _errorMessage.value = "User creation failed"
                 }
+
             } catch (e: Exception) {
                 _errorMessage.value = getErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    // Function to read user data from database (for future use)
+    suspend fun getUserData(userId: String): UserData? {
+        return try {
+            val snapshot = database.reference
+                .child("users")
+                .child(userId)
+                .get()
+                .await()
+
+            snapshot.getValue(UserData::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Function to get current user data
+    suspend fun getCurrentUserData(): UserData? {
+        val currentUser = auth.currentUser
+        return if (currentUser != null) {
+            getUserData(currentUser.uid)
+        } else {
+            null
         }
     }
 

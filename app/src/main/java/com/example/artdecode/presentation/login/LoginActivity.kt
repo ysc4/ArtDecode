@@ -179,6 +179,8 @@ class LoginActivity : AppCompatActivity() {
                 Log.w(TAG, "Google Sign-In error: ${state.message}")
                 showGlobalError(state.message)
             }
+
+            else -> {}
         }
     }
 

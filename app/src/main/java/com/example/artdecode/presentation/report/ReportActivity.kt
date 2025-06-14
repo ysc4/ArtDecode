@@ -4,9 +4,11 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels // Import for by viewModels()
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -31,15 +33,22 @@ class ReportActivity : AppCompatActivity() {
 
         val backButton: ImageButton = findViewById(R.id.backButton)
         val submitButton: Button = findViewById(R.id.submitButton)
+        val reportInput: EditText = findViewById(R.id.reportInput)
 
         backButton.setOnClickListener {
             viewModel.onBackClicked()
         }
 
         submitButton.setOnClickListener {
-            // In a real app, you might first gather data from EditTexts and pass to ViewModel
-            // e.g., viewModel.submitReport(titleEditText.text.toString(), descriptionEditText.text.toString())
-            viewModel.onSubmitClicked()
+            val reportText = reportInput.text.toString().trim()
+            if (reportText.isEmpty()) {
+                Toast.makeText(this, "Please enter a report description", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Disable submit button to prevent multiple submissions
+            submitButton.isEnabled = false
+            viewModel.onSubmitClicked(reportText)
         }
 
         observeViewModel()
@@ -48,12 +57,7 @@ class ReportActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.navigateToArtworkInfo.observe(this) { event ->
             event.getContentIfNotHandled()?.let {
-                // Navigate back to ArtworkInfo (or simply finish if ArtworkInfo is always the previous screen)
-                // If ArtworkInfo is not guaranteed to be the direct parent, starting a new Intent is safer.
-                // However, if it's always just "back", then finish() might be enough.
-                // For this example, we'll keep the explicit navigation to be clear.
                 val intent = Intent(this, ArtworkInfoActivity::class.java)
-                // intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP // Optional: if you want to clear stack above ArtworkInfo
                 startActivity(intent)
                 finish()
             }
@@ -65,13 +69,30 @@ class ReportActivity : AppCompatActivity() {
                     .setTitle("Success")
                     .setMessage("Report submitted successfully")
                     .setPositiveButton("OK") { _, _ ->
-                        finish() // Finish the activity after the dialog is dismissed
+                        finish()
                     }
                     .setOnCancelListener {
-                        finish() // Also finish if the dialog is cancelled (e.g., by pressing back)
+                        finish()
                     }
                     .show()
             }
+        }
+
+        viewModel.showError.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { errorMessage ->
+                // Re-enable submit button on error
+                findViewById<Button>(R.id.submitButton).isEnabled = true
+
+                AlertDialog.Builder(this)
+                    .setTitle("Error")
+                    .setMessage(errorMessage)
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        }
+
+        viewModel.isLoading.observe(this) { isLoading ->
+            findViewById<Button>(R.id.submitButton).isEnabled = !isLoading
         }
     }
 }
