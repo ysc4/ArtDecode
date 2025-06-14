@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.artdecode.data.model.RecyclerViewItem
 import com.example.artdecode.data.repository.ArtworkRepository
+import com.example.artdecode.data.model.Artwork // Import the combined Artwork data class
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,13 +44,18 @@ class HomeViewModel(
         }
     }
 
-    fun onArtworkClick(artworkId: Int) {
+    // Changed artworkId type to String?
+    fun onArtworkClick(artworkId: String?) {
         _uiState.value = _uiState.value.copy(navigateToArtworkDetail = artworkId)
     }
 
-    fun onFavoriteClick(artworkId: Int) {
+    // Changed artworkId type to String?
+    fun onFavoriteClick(artworkId: String?) {
         viewModelScope.launch {
-            artworkRepository.toggleFavorite(artworkId)
+            // Null check for ID
+            artworkId?.let { id ->
+                artworkRepository.toggleFavorite(id)
+            }
         }
     }
 
@@ -61,5 +67,5 @@ class HomeViewModel(
 data class HomeUiState(
     val items: List<RecyclerViewItem> = emptyList(),
     val isLoading: Boolean = false,
-    val navigateToArtworkDetail: Int? = null
+    val navigateToArtworkDetail: String? = null // Changed ID type to String?
 )

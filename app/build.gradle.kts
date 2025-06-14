@@ -18,6 +18,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
@@ -38,6 +40,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        mlModelBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -59,6 +62,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.firebase.database.ktx)
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.metadata)
+    implementation(libs.tensorflow.lite.gpu)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -75,4 +81,8 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
 
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
+
+    implementation(libs.androidx.exifinterface)
 }

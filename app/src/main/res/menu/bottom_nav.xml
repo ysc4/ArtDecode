@@ -3,11 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/navHome"
-        android:icon="@drawable/active_home" />
+        android:icon="@drawable/active_home"
+        android:title="Home"/>
     <item
         android:id="@+id/navScan"
-        android:icon="@drawable/inactive_scan"/>
+        android:icon="@drawable/inactive_scan"
+        android:title="Scan"/>
     <item
         android:id="@+id/navSettings"
-        android:icon="@drawable/inactive_settings"/>
+        android:icon="@drawable/inactive_settings"
+        android:title="Settings"/>
 </menu>

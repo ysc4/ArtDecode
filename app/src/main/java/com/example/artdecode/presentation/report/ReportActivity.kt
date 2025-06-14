@@ -20,6 +20,12 @@ class ReportActivity : AppCompatActivity() {
 
     private val viewModel: ReportViewModel by viewModels()
 
+    // Variables to hold the artwork data passed from ArtworkInfoActivity
+    private var artworkId: String? = null
+    private var capturedImageUri: String? = null
+    private var artStyle: String? = null
+    private var confidenceScore: Float? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -31,12 +37,20 @@ class ReportActivity : AppCompatActivity() {
             insets
         }
 
+        // Retrieve artwork data from the Intent
+        artworkId = intent.getStringExtra("ARTWORK_ID")
+        capturedImageUri = intent.getStringExtra("CAPTURED_IMAGE_URI")
+        artStyle = intent.getStringExtra("ART_STYLE")
+        confidenceScore = intent.getFloatExtra("CONFIDENCE_SCORE", -1f).takeIf { it != -1f }
+
+
         val backButton: ImageButton = findViewById(R.id.backButton)
         val submitButton: Button = findViewById(R.id.submitButton)
         val reportInput: EditText = findViewById(R.id.reportInput)
 
         backButton.setOnClickListener {
-            viewModel.onBackClicked()
+            // Pass the retrieved artwork data to the ViewModel when back is clicked
+            viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
         }
 
         submitButton.setOnClickListener {
@@ -56,8 +70,10 @@ class ReportActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.navigateToArtworkInfo.observe(this) { event ->
-            event.getContentIfNotHandled()?.let {
-                val intent = Intent(this, ArtworkInfoActivity::class.java)
+            event.getContentIfNotHandled()?.let { artworkInfoBundle ->
+                val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
+                    putExtras(artworkInfoBundle) // Put the Bundle back into the Intent
+                }
                 startActivity(intent)
                 finish()
             }
@@ -69,10 +85,12 @@ class ReportActivity : AppCompatActivity() {
                     .setTitle("Success")
                     .setMessage("Report submitted successfully")
                     .setPositiveButton("OK") { _, _ ->
-                        finish()
+                        // After success, also navigate back to the original ArtworkInfoActivity
+                        viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
                     }
                     .setOnCancelListener {
-                        finish()
+                        // Also navigate back if dialog is cancelled
+                        viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
                     }
                     .show()
             }
@@ -80,9 +98,7 @@ class ReportActivity : AppCompatActivity() {
 
         viewModel.showError.observe(this) { event ->
             event.getContentIfNotHandled()?.let { errorMessage ->
-                // Re-enable submit button on error
-                findViewById<Button>(R.id.submitButton).isEnabled = true
-
+                findViewById<Button>(R.id.submitButton).isEnabled = true // Re-enable submit button on error
                 AlertDialog.Builder(this)
                     .setTitle("Error")
                     .setMessage(errorMessage)

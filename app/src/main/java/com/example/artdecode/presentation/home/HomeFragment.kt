@@ -12,17 +12,16 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.artdecode.R
 import com.example.artdecode.data.repository.ArtworkRepositoryImpl
-import com.example.artdecode.presentation.adapter.ArtworkAdapter
 import com.example.artdecode.presentation.artworkinfo.ArtworkInfoActivity
 import com.example.artdecode.utils.GridSpacingItemDecoration
-//import com.example.artdecode.utils.GridSpacingItemDecoration
+import com.example.artdecode.presentation.adapter.ArtworkAdapter // Correct import for ArtworkAdapter
 import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
 
     private lateinit var viewModel: HomeViewModel
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: ArtworkAdapter
+    private lateinit var adapter: ArtworkAdapter // Use ArtworkAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,7 +38,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupViewModel() {
-        // Manual dependency injection
         val repository = ArtworkRepositoryImpl(requireContext())
         val factory = HomeViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
@@ -59,11 +57,11 @@ class HomeFragment : Fragment() {
         val spacing = (18 * resources.displayMetrics.density).toInt()
         recyclerView.addItemDecoration(GridSpacingItemDecoration(2, spacing, true))
 
-        adapter = ArtworkAdapter(
-            onItemClick = { artworkId ->
+        adapter = ArtworkAdapter( // Use ArtworkAdapter here
+            onItemClick = { artworkId: String? ->
                 viewModel.onArtworkClick(artworkId)
             },
-            onFavoriteClick = { artworkId ->
+            onFavoriteClick = { artworkId: String? ->
                 viewModel.onFavoriteClick(artworkId)
             }
         )
@@ -76,8 +74,9 @@ class HomeFragment : Fragment() {
                 adapter.submitList(uiState.items)
 
                 uiState.navigateToArtworkDetail?.let { artworkId ->
-                    val intent = Intent(requireContext(), ArtworkInfoActivity::class.java)
-                    intent.putExtra("ARTWORK_ID", artworkId)
+                    val intent = Intent(requireContext(), ArtworkInfoActivity::class.java).apply {
+                        putExtra("ARTWORK_ID", artworkId)
+                    }
                     startActivity(intent)
                     viewModel.onNavigationHandled()
                 }
@@ -90,4 +89,3 @@ class HomeFragment : Fragment() {
         fun newInstance() = HomeFragment()
     }
 }
-
