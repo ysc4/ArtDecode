@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox // Import CheckBox
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -27,137 +28,142 @@ import kotlinx.coroutines.launch
 class SignUpActivity : AppCompatActivity() {
 
     private val viewModel: SignUpViewModel by viewModels()
-    private lateinit var binding: ActivitySignUpBinding
+    private lateinit var binding: ActivitySignUpBinding // Using ViewBinding, so stick to it
 
-    private var email = ""
-    private var username = ""
-    private var password = ""
-    private var confirmPassword = ""
+    // Remove these direct variables, use binding.emailInput.text.toString() instead
+    // private var email = ""
+    // private var username = ""
+    // private var password = ""
+    // private var confirmPassword = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_sign_up)
+        binding = ActivitySignUpBinding.inflate(layoutInflater) // Initialize binding
+        setContentView(binding.root) // Use binding.root
 
         setupWindowInsets()
-        setupListenersWithFindViewById()
+        setupUIListeners() // Renamed to use binding
         observeViewModel()
         handleBackPress()
     }
 
     private fun setupWindowInsets() {
-        val rootView = findViewById<View>(android.R.id.content)
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets -> // Use binding.root
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
     }
 
-    private fun setupListenersWithFindViewById() {
-        val emailInput = findViewById<EditText>(R.id.emailInput)
-        val usernameInput = findViewById<EditText>(R.id.usernameInput)
-        val passwordInput = findViewById<EditText>(R.id.passwordInput)
-        val confirmPasswordInput = findViewById<EditText>(R.id.repeatPassword)
-        val signUpButton = findViewById<Button>(R.id.signUpConfirm)
-        val loginLinkTextView = findViewById<TextView>(R.id.loginLink)
+    // Updated to use ViewBinding
+    private fun setupUIListeners() {
+        with(binding) {
+            emailInput.doAfterTextChanged { /* No need to store in local var if passing directly */ }
+            usernameInput.doAfterTextChanged { /* No need to store in local var if passing directly */ }
+            passwordInput.doAfterTextChanged { /* No need to store in local var if passing directly */ }
+            repeatPassword.doAfterTextChanged { /* No need to store in local var if passing directly */ }
 
-        emailInput.doAfterTextChanged { email = it.toString().trim() }
-        usernameInput.doAfterTextChanged { username = it.toString().trim() }
-        passwordInput.doAfterTextChanged { password = it.toString() }
-        confirmPasswordInput.doAfterTextChanged { confirmPassword = it.toString() }
+            signUpConfirm.setOnClickListener {
+                // Pass all input values and checkbox state to the ViewModel
+                viewModel.signUp(
+                    emailInput.text.toString().trim(),
+                    usernameInput.text.toString().trim(),
+                    passwordInput.text.toString(),
+                    repeatPassword.text.toString(),
+                    checkBox.isChecked // Pass the checked state of the checkbox
+                )
+            }
 
-        signUpButton.setOnClickListener {
-            viewModel.signUp(email, username, password, confirmPassword)
-        }
-
-        loginLinkTextView.setOnClickListener {
-            viewModel.navigateToLogin()
+            loginLink.setOnClickListener {
+                viewModel.navigateToLogin()
+            }
         }
     }
 
-    // Update observeViewModel to use findViewById
+    // Updated to use ViewBinding
     private fun observeViewModel() {
-        val loadingProgressBar = findViewById<ProgressBar>(R.id.loadingProgressBar)
-        val signUpButton = findViewById<Button>(R.id.signUpConfirm)
-        val emailInput = findViewById<EditText>(R.id.emailInput)
-        val usernameInput = findViewById<EditText>(R.id.usernameInput)
-        val passwordInput = findViewById<EditText>(R.id.passwordInput)
-        val confirmPasswordInput = findViewById<EditText>(R.id.repeatPassword)
-        val errorTextView = findViewById<TextView>(R.id.errorTextView)
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Loading state
-                launch {
-                    viewModel.isLoading.collect { isLoading ->
-                        loadingProgressBar.isVisible = isLoading
-                        signUpButton.isEnabled = !isLoading
-                        signUpButton.alpha = if (isLoading) 0.6f else 1.0f
-                    }
-                }
-
-                // Field errors
-                launch {
-                    viewModel.emailError.collect { error ->
-                        emailInput.error = error
-                        if (error != null) emailInput.requestFocus()
-                    }
-                }
-
-                launch {
-                    viewModel.usernameError.collect { error ->
-                        usernameInput.error = error
-                        if (error != null && emailInput.error == null) {
-                            usernameInput.requestFocus()
+        with(binding) { // Use 'with(binding)' to simplify access
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    // Loading state
+                    launch {
+                        viewModel.isLoading.collect { isLoading ->
+                            loadingProgressBar.isVisible = isLoading
+                            signUpConfirm.isEnabled = !isLoading
+                            signUpConfirm.alpha = if (isLoading) 0.6f else 1.0f
                         }
                     }
-                }
 
-                launch {
-                    viewModel.passwordError.collect { error ->
-                        passwordInput.error = error
-                        if (error != null && emailInput.error == null && usernameInput.error == null) {
-                            passwordInput.requestFocus()
+                    // Field errors
+                    launch {
+                        viewModel.emailError.collect { error ->
+                            emailInput.error = error
+                            if (error != null) emailInput.requestFocus()
                         }
                     }
-                }
 
-                launch {
-                    viewModel.confirmPasswordError.collect { error ->
-                        confirmPasswordInput.error = error
-                        if (error != null && emailInput.error == null &&
-                            usernameInput.error == null && passwordInput.error == null) {
-                            confirmPasswordInput.requestFocus()
+                    launch {
+                        viewModel.usernameError.collect { error ->
+                            usernameInput.error = error
+                            if (error != null && emailInput.error == null) {
+                                usernameInput.requestFocus()
+                            }
                         }
                     }
-                }
 
-                // Global error
-                launch {
-                    viewModel.errorMessage.collect { error ->
-                        if (error != null) {
-                            errorTextView.text = error
-                            errorTextView.isVisible = true
-                        } else {
-                            errorTextView.isVisible = false
+                    launch {
+                        viewModel.passwordError.collect { error ->
+                            passwordInput.error = error
+                            if (error != null && emailInput.error == null && usernameInput.error == null) {
+                                passwordInput.requestFocus()
+                            }
                         }
                     }
-                }
 
-                // Navigation and Toast messages remain the same
-                launch {
-                    viewModel.navigateToLogin.collect { event ->
-                        event?.getContentIfNotHandled()?.let {
-                            navigateToLogin()
+                    launch {
+                        viewModel.confirmPasswordError.collect { error ->
+                            repeatPassword.error = error
+                            if (error != null && emailInput.error == null &&
+                                usernameInput.error == null && passwordInput.error == null) {
+                                repeatPassword.requestFocus()
+                            }
                         }
                     }
-                }
 
-                launch {
-                    viewModel.toastMessage.collect { event ->
-                        event?.getContentIfNotHandled()?.let { message ->
-                            Toast.makeText(this@SignUpActivity, message, Toast.LENGTH_SHORT).show()
+                    // Global error
+                    launch {
+                        viewModel.errorMessage.collect { error ->
+                            if (error != null) {
+                                errorTextView.text = error
+                                errorTextView.isVisible = true
+                            } else {
+                                errorTextView.isVisible = false
+                            }
+                        }
+                    }
+
+                    // Navigation and Toast messages remain the same
+                    launch {
+                        viewModel.navigateToLogin.collect { event ->
+                            event?.getContentIfNotHandled()?.let {
+                                navigateToLogin()
+                            }
+                        }
+                    }
+
+                    launch {
+                        viewModel.toastMessage.collect { event ->
+                            event?.getContentIfNotHandled()?.let { message ->
+                                Toast.makeText(this@SignUpActivity, message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+
+                    launch {
+                        viewModel.termsError.collect { error ->
+                            binding.termsErrorTextView.text = error
+                            binding.termsErrorTextView.isVisible = (error != null)
                         }
                     }
                 }

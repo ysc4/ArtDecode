@@ -40,6 +40,11 @@ class SignUpViewModel : ViewModel() {
     private val _confirmPasswordError = MutableStateFlow<String?>(null)
     val confirmPasswordError: StateFlow<String?> = _confirmPasswordError.asStateFlow()
 
+    // New StateFlow for terms and conditions error
+    private val _termsError = MutableStateFlow<String?>(null)
+    val termsError: StateFlow<String?> = _termsError.asStateFlow()
+
+
     private val _navigateToLogin = MutableStateFlow<Event<Unit>?>(null)
     val navigateToLogin: StateFlow<Event<Unit>?> = _navigateToLogin.asStateFlow()
 
@@ -53,12 +58,18 @@ class SignUpViewModel : ViewModel() {
         val createdAt: Long = System.currentTimeMillis()
     )
 
-    fun signUp(email: String, username: String, password: String, confirmPassword: String) {
-        if (!validateInputs(email, username, password, confirmPassword)) return
+    fun signUp(
+        email: String,
+        username: String,
+        password: String,
+        confirmPassword: String,
+        agreedToTerms: Boolean // New parameter
+    ) {
+        if (!validateInputs(email, username, password, confirmPassword, agreedToTerms)) return // Pass new parameter
 
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null
+            _errorMessage.value = null // Clear any general error before starting
 
             try {
                 // Create user with email and password
@@ -74,7 +85,9 @@ class SignUpViewModel : ViewModel() {
                     try {
                         user.updateProfile(profileUpdates).await()
                     } catch (e: Exception) {
-                        // Profile update failed, but continue with database storage
+                        // Profile update failed, but continue with database storage if account was created
+                        // Log this or show a specific toast if desired
+                        _toastMessage.value = Event("Account created, but failed to set username.")
                     }
 
                     // Store user data in Realtime Database
@@ -137,8 +150,15 @@ class SignUpViewModel : ViewModel() {
         }
     }
 
-    private fun validateInputs(email: String, username: String, password: String, confirmPassword: String): Boolean {
-        clearErrors()
+    // Modified validateInputs to include the terms checkbox check
+    private fun validateInputs(
+        email: String,
+        username: String,
+        password: String,
+        confirmPassword: String,
+        agreedToTerms: Boolean // New parameter
+    ): Boolean {
+        clearErrors() // Clear all errors at the start
         var hasError = false
 
         when {
@@ -185,15 +205,23 @@ class SignUpViewModel : ViewModel() {
             }
         }
 
+        // New validation for terms and conditions
+        if (!agreedToTerms) {
+            _termsError.value = "You must agree to the Terms and Conditions"
+            hasError = true
+        }
+
         return !hasError
     }
 
+    // Modified clearErrors to include the new terms error
     private fun clearErrors() {
         _emailError.value = null
         _usernameError.value = null
         _passwordError.value = null
         _confirmPasswordError.value = null
         _errorMessage.value = null
+        _termsError.value = null // Clear terms error
     }
 
     private fun getErrorMessage(exception: Throwable): String {
@@ -212,5 +240,7 @@ class SignUpViewModel : ViewModel() {
     fun clearMessages() {
         _toastMessage.value = null
         _navigateToLogin.value = null
+        // Potentially clear other errors if needed on destroy/recreation
+        // clearErrors() // Uncomment if you want errors to disappear on navigation away
     }
 }
