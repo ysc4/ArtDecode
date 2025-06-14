@@ -77,15 +77,20 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private var password: String = ""
 
     init {
-        checkCurrentUser()
+        // Always sign out the current user when the ViewModel is initialized
+        // This ensures the login screen always starts from a logged-out state.
+        auth.signOut()
+        Log.d(TAG, "FirebaseAuth signed out at ViewModel init.")
+        // No need to checkCurrentUser() anymore if we're always signing out
     }
 
-    private fun checkCurrentUser() {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            fetchUserInfoAndNavigate(currentUser)
-        }
-    }
+    // This method is no longer needed as we're always signing out on init
+    // private fun checkCurrentUser() {
+    //     val currentUser = auth.currentUser
+    //     if (currentUser != null) {
+    //         fetchUserInfoAndNavigate(currentUser)
+    //     }
+    // }
 
     private fun fetchUserInfoAndNavigate(firebaseUser: FirebaseUser) {
         val userRef = database.getReference("users").child(firebaseUser.uid)
