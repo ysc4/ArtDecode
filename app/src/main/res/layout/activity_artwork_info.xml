@@ -116,7 +116,7 @@
                             android:background="@drawable/ripple_circle" />
 
                         <ImageButton
-                            android:id="@+id/favoritedButton"
+                            android:id="@+id/favoriteButton"
                             android:layout_width="25dp"
                             android:layout_height="25dp"
                             android:layout_gravity="center"

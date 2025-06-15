@@ -15,7 +15,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.artdecode.R
-import com.example.artdecode.data.model.Artwork
 import com.example.artdecode.data.repository.ArtworkRepositoryImpl
 import com.example.artdecode.presentation.main.MainActivity
 import com.example.artdecode.presentation.scan.ScanActivity
@@ -75,7 +74,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         artworkImageView = findViewById<ImageView>(R.id.artworkImage)
-        favoriteButton = findViewById<ImageButton>(R.id.favoritedButton)
+        favoriteButton = findViewById<ImageButton>(R.id.favoriteButton)
         artworkStyleTextView = findViewById<TextView>(R.id.artworkStyle)
         confidenceScoreTextView = findViewById<TextView>(R.id.confScore)
         similarArtworksContainer = findViewById<LinearLayout>(R.id.similarArtworksContainer)
