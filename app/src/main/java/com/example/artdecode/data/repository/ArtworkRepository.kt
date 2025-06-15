@@ -9,13 +9,13 @@ interface ArtworkRepository {
     suspend fun toggleFavorite(artworkId: String)
     suspend fun getFavoriteState(artworkId: String): Boolean
     suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean)
-    // suspend fun deleteArtwork(id: String)
+
+    // NEW method for swipe deletion
+    suspend fun deleteArtwork(artworkId: String)
 
     // NEW methods for Firebase
     suspend fun saveArtwork(artwork: Artwork): Artwork
     suspend fun getArtworkById(id: String): Artwork?
     fun getSimilarArtworks(artStyle: String, excludeArtworkId: String?): Flow<List<Artwork>>
     fun updateArtworkInFlow(artwork: Artwork)
-
-
 }

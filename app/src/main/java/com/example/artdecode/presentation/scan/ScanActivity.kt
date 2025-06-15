@@ -19,20 +19,26 @@ import com.example.artdecode.R
 import com.example.artdecode.ScanFrameOverlay
 import com.example.artdecode.presentation.artworkinfo.ArtworkInfoActivity
 import com.example.artdecode.utils.Event
-import com.example.artdecode.data.model.ScanState // This import seems correct if ScanState is in data.model
+import com.example.artdecode.data.model.ScanState
 import com.example.artdecode.data.model.Artwork
 
-
-// Main Activity (View)
 class ScanActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "ScanActivity"
+        const val EXTRA_USER_EMAIL = "extra_user_email"
+        const val EXTRA_USER_USERNAME = "extra_user_username"
+        const val EXTRA_USER_UID = "extra_user_uid"
     }
 
     private val viewModel: ScanViewModel by viewModels()
     private lateinit var previewView: PreviewView
     private lateinit var scanOverlay: ScanFrameOverlay
+
+    // User information
+    private var userEmail: String? = null
+    private var userUsername: String? = null
+    private var userUid: String? = null
 
     // Activity result launchers
     private val requestPermissionLauncher = registerForActivityResult(
@@ -59,10 +65,26 @@ class ScanActivity : AppCompatActivity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         supportActionBar?.hide()
 
+        // Extract user information from intent
+        extractUserInfoFromIntent()
+
         initializeViews()
         setupClickListeners()
         observeViewModel()
         checkInitialPermissions()
+    }
+
+    private fun extractUserInfoFromIntent() {
+        userEmail = intent.getStringExtra(EXTRA_USER_EMAIL)
+        userUsername = intent.getStringExtra(EXTRA_USER_USERNAME)
+        userUid = intent.getStringExtra(EXTRA_USER_UID)
+
+        // Pass user ID to ViewModel
+        userUid?.let { uid ->
+            viewModel.setCurrentUserId(uid)
+        }
+
+        Log.d(TAG, "User info extracted - UID: $userUid, Email: $userEmail, Username: $userUsername")
     }
 
     private fun initializeViews() {
@@ -84,7 +106,12 @@ class ScanActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.galleryButton).setOnClickListener {
-            viewModel.onGalleryClicked()
+            // Check if gallery is enabled before allowing gallery access
+            if (viewModel.isGalleryEnabled()) {
+                viewModel.onGalleryClicked()
+            } else {
+                Toast.makeText(this, "Gallery access is disabled. Camera only mode is enabled.", Toast.LENGTH_SHORT).show()
+            }
         }
 
         findViewById<View>(R.id.captureButton).setOnClickListener {
@@ -180,12 +207,16 @@ class ScanActivity : AppCompatActivity() {
     private fun navigateToArtworkInfo(artwork: Artwork) {
         val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
             // Pass all relevant data as extras.
-            // It's crucial that ArtworkInfoActivity.getArtworkFromIntent()
-            // is updated to read these correctly.
             putExtra("ARTWORK_ID", artwork.id)
             putExtra("CAPTURED_IMAGE_URI", artwork.imageUri)
             putExtra("ART_STYLE", artwork.artStyle)
             putExtra("CONFIDENCE_SCORE", artwork.confidenceScore ?: 0f)
+            putExtra("USER_ID", artwork.userId) // Pass user ID
+
+            // Also pass original user info if needed
+            putExtra(EXTRA_USER_EMAIL, userEmail)
+            putExtra(EXTRA_USER_USERNAME, userUsername)
+            putExtra(EXTRA_USER_UID, userUid)
         }
         startActivity(intent)
         finish()

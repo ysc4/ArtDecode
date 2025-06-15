@@ -15,21 +15,19 @@ import com.example.artdecode.data.model.Artwork // Import the combined Artwork d
 import com.example.artdecode.data.model.RecyclerViewItem
 
 class ArtworkAdapter(
-    // Ensure callbacks use String? for IDs
     private val onItemClick: (String?) -> Unit,
     private val onFavoriteClick: (String?) -> Unit
 ) : ListAdapter<RecyclerViewItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
-        private const val VIEW_TYPE_HEADER = 0
-        private const val VIEW_TYPE_ARTWORK = 1
+        const val VIEW_TYPE_HEADER = 0
+        const val VIEW_TYPE_ARTWORK = 1
     }
 
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
             is RecyclerViewItem.Header -> VIEW_TYPE_HEADER
             is RecyclerViewItem.ArtworkItem -> VIEW_TYPE_ARTWORK
-            else -> throw IllegalArgumentException("Unknown item type at position $position")
         }
     }
 
