@@ -132,7 +132,7 @@ class LoginActivity : AppCompatActivity() {
                 launch {
                     viewModel.toastMessage.collect { event ->
                         event?.getContentIfNotHandled()?.let { message ->
-                            Toast.makeText(this@LoginActivity, message, Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@LoginActivity, message, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -248,7 +248,6 @@ class LoginActivity : AppCompatActivity() {
             userInfo.username?.let { username ->
                 if (username.isNotBlank()) {
                     append(username)
-                    userInfo.email?.let { email -> append(" ($email)") }
                 } else {
                     userInfo.email?.let { email -> append(email) }
                 }
