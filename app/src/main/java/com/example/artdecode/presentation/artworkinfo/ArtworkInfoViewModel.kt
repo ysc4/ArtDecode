@@ -3,11 +3,13 @@ package com.example.artdecode.presentation.artworkinfo
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.artdecode.data.model.Artwork
 import com.example.artdecode.data.repository.ArtworkRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+// Removed unused import: import com.example.artdecode.R
 
 class ArtworkInfoViewModel(
     private val artworkRepository: ArtworkRepository
@@ -16,28 +18,65 @@ class ArtworkInfoViewModel(
     private val _uiState = MutableStateFlow(ArtworkInfoUiState())
     val uiState: StateFlow<ArtworkInfoUiState> = _uiState.asStateFlow()
 
-    fun loadArtworkInfo(imageUri: Uri?) {
-        _uiState.value = _uiState.value.copy(
-            imageUri = imageUri,
-            similarArtworks = getSimilarArtworks()
-        )
-        loadFavoriteState()
-    }
-
-    private fun loadFavoriteState() {
+    fun loadArtworkInfo(
+        artworkId: String? = null,
+        capturedImageUri: String? = null,
+        artStyle: String? = null,
+        confidenceScore: Float? = null
+    ) {
         viewModelScope.launch {
-            val isFavorite = artworkRepository.getFavoriteState(1)
-            _uiState.value = _uiState.value.copy(isFavorite = isFavorite)
+            _uiState.value = _uiState.value.copy(errorMessage = null) // Clear previous errors
+
+            val currentArtwork: Artwork? = if (artworkId != null) {
+                artworkRepository.getArtworkById(artworkId)
+            } else if (capturedImageUri != null && artStyle != null && confidenceScore != null) {
+                // This is a newly scanned artwork. Assuming it was already saved in ScanViewModel
+                // and we're just displaying it. We create a temporary one for display
+                // (it won't be saved again here unless you explicitly call saveArtwork).
+                Artwork(
+                    id = null, // ID should ideally be from the DB if already saved
+                    imageUri = capturedImageUri,
+                    artStyle = artStyle,
+                    confidenceScore = confidenceScore,
+                    isFavorite = false // Default for new artwork
+                )
+            } else {
+                null
+            }
+
+            if (currentArtwork != null) {
+                _uiState.value = _uiState.value.copy(artwork = currentArtwork) // Update artwork first
+
+                // NOW FETCH SIMILAR ARTWORKS BASED ON THE LOADED ARTWORK'S STYLE
+                currentArtwork.artStyle?.let { style ->
+                    artworkRepository.getSimilarArtworks(style, currentArtwork.id)
+                        .collect { similarArtworksList ->
+                            _uiState.value = _uiState.value.copy(similarArtworks = similarArtworksList)
+                        }
+                }
+
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    artwork = null,
+                    similarArtworks = emptyList(), // Clear similar artworks too if main artwork is null
+                    errorMessage = "Artwork not found or no data available."
+                )
+            }
         }
     }
 
     fun toggleFavorite() {
         viewModelScope.launch {
-            val currentState = _uiState.value.isFavorite
-            val newState = !currentState
-
-            artworkRepository.saveFavoriteState(1, newState)
-            _uiState.value = _uiState.value.copy(isFavorite = newState)
+            _uiState.value.artwork?.let { currentArtwork ->
+                currentArtwork.id?.let { artworkId ->
+                    val newFavoriteState = !currentArtwork.isFavorite
+                    artworkRepository.saveFavoriteState(artworkId, newFavoriteState)
+                    _uiState.value = _uiState.value.copy(
+                        artwork = currentArtwork.copy(isFavorite = newFavoriteState)
+                    )
+                    artworkRepository.updateArtworkInFlow(currentArtwork.copy(isFavorite = newFavoriteState))
+                }
+            }
         }
     }
 
@@ -53,7 +92,8 @@ class ArtworkInfoViewModel(
         _uiState.value = _uiState.value.copy(navigateToReport = true)
     }
 
-    fun onSimilarArtworkClick(artworkId: String) {
+    fun onSimilarArtworkClick(artworkId: String?) {
+        // When a similar artwork is clicked, load its details as the main artwork
         _uiState.value = _uiState.value.copy(navigateToSimilarArtwork = artworkId)
     }
 
@@ -62,21 +102,8 @@ class ArtworkInfoViewModel(
             navigateBack = false,
             navigateToScan = false,
             navigateToReport = false,
-            navigateToSimilarArtwork = null
+            navigateToSimilarArtwork = null,
+            errorMessage = null
         )
     }
-
-    private fun getSimilarArtworks(): List<String> {
-        return listOf("artwork1", "artwork2", "artwork3", "artwork4")
-    }
 }
-
-data class ArtworkInfoUiState(
-    val imageUri: Uri? = null,
-    val isFavorite: Boolean = false,
-    val similarArtworks: List<String> = emptyList(),
-    val navigateBack: Boolean = false,
-    val navigateToScan: Boolean = false,
-    val navigateToReport: Boolean = false,
-    val navigateToSimilarArtwork: String? = null
-)

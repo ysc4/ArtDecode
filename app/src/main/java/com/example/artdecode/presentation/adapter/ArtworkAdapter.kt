@@ -1,19 +1,23 @@
 package com.example.artdecode.presentation.adapter
 
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.artdecode.R
+import com.example.artdecode.data.model.Artwork // Import the combined Artwork data class
 import com.example.artdecode.data.model.RecyclerViewItem
 
 class ArtworkAdapter(
-    private val onItemClick: (Int) -> Unit,
-    private val onFavoriteClick: (Int) -> Unit
+    // Ensure callbacks use String? for IDs
+    private val onItemClick: (String?) -> Unit,
+    private val onFavoriteClick: (String?) -> Unit
 ) : ListAdapter<RecyclerViewItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
@@ -25,6 +29,7 @@ class ArtworkAdapter(
         return when (getItem(position)) {
             is RecyclerViewItem.Header -> VIEW_TYPE_HEADER
             is RecyclerViewItem.ArtworkItem -> VIEW_TYPE_ARTWORK
+            else -> throw IllegalArgumentException("Unknown item type at position $position")
         }
     }
 
@@ -32,12 +37,12 @@ class ArtworkAdapter(
         return when (viewType) {
             VIEW_TYPE_HEADER -> {
                 val view = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.header, parent, false)
+                    .inflate(R.layout.header, parent, false) // Assuming this is your header layout
                 HeaderViewHolder(view)
             }
             VIEW_TYPE_ARTWORK -> {
                 val view = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.item_collection, parent, false)
+                    .inflate(R.layout.item_collection, parent, false) // Your artwork card layout
                 ArtworkViewHolder(view, onItemClick, onFavoriteClick)
             }
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
@@ -47,7 +52,7 @@ class ArtworkAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
             is RecyclerViewItem.Header -> (holder as HeaderViewHolder).bind(item)
-            is RecyclerViewItem.ArtworkItem -> (holder as ArtworkViewHolder).bind(item)
+            is RecyclerViewItem.ArtworkItem -> (holder as ArtworkViewHolder).bind(item.artwork)
         }
     }
 
@@ -61,33 +66,46 @@ class ArtworkAdapter(
 
     class ArtworkViewHolder(
         itemView: View,
-        private val onItemClick: (Int) -> Unit,
-        private val onFavoriteClick: (Int) -> Unit
+        // Ensure callbacks use String? for IDs
+        private val onItemClick: (String?) -> Unit,
+        private val onFavoriteClick: (String?) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
 
-        fun bind(artworkItem: RecyclerViewItem.ArtworkItem) {
-            val artwork = artworkItem.artwork
+        private val artworkImage: ImageView = itemView.findViewById(R.id.artworkImage)
+        // Corrected TextView IDs to match item_collection.xml
+        private val artStyleTextView: TextView = itemView.findViewById(R.id.artStyle)
+        private val confidenceTextView: TextView = itemView.findViewById(R.id.confidenceScore)
+        private val favoriteIcon: ImageView = itemView.findViewById(R.id.favoritedButton)
 
-            val artStyleTextView = itemView.findViewById<TextView>(R.id.artStyle)
-            val confidenceTextView = itemView.findViewById<TextView>(R.id.confidenceScore)
-            val favoriteIcon = itemView.findViewById<ImageView>(R.id.favoriteButton)
-            val artworkImage = itemView.findViewById<ImageView>(R.id.artworkImage)
+        fun bind(artwork: Artwork) { // Bind with the combined Artwork object
+            // Load image using Glide, handling Uri String
+            artwork.imageUri?.let { uriString ->
+                Glide.with(itemView.context)
+                    .load(Uri.parse(uriString)) // Parse the string back to Uri for Glide
+                    .placeholder(R.drawable.placeholder_image) // Ensure you have this drawable
+                    .error(R.drawable.placeholder_image) // Ensure you have this drawable
+                    .into(artworkImage)
+            } ?: run {
+                artworkImage.setImageResource(R.drawable.placeholder_image) // Fallback for null URI
+            }
 
-            artStyleTextView?.text = artwork.style
-            confidenceTextView?.text = "${artwork.confidence}% Confidence"
+            // Set artwork details using the unified Artwork properties
+            artStyleTextView.text = artwork.artStyle ?: "Unknown Style"
+            confidenceTextView.text = artwork.confidenceScore?.let {
+                String.format("%.2f%% Confidence", it * 100) // Format to percentage
+            } ?: "N/A Confidence"
 
             // Set the favorite icon based on state
-            favoriteIcon?.setImageResource(
-                if (artwork.isFavorite) R.drawable.active_heart
+            favoriteIcon.setImageResource(
+                if (artwork.isFavorite) R.drawable.active_heart // Assuming these drawables exist
                 else R.drawable.inactive_heart
             )
 
-            // Favorite button click
-            favoriteIcon?.setOnClickListener {
+            // Set click listeners - now passing String? ID
+            favoriteIcon.setOnClickListener {
                 onFavoriteClick(artwork.id)
             }
 
-            // Item click
             itemView.setOnClickListener {
                 onItemClick(artwork.id)
             }
@@ -100,12 +118,14 @@ class ArtworkAdapter(
                 oldItem is RecyclerViewItem.Header && newItem is RecyclerViewItem.Header ->
                     oldItem.title == newItem.title
                 oldItem is RecyclerViewItem.ArtworkItem && newItem is RecyclerViewItem.ArtworkItem ->
+                    // Compare String? IDs
                     oldItem.artwork.id == newItem.artwork.id
                 else -> false
             }
         }
 
         override fun areContentsTheSame(oldItem: RecyclerViewItem, newItem: RecyclerViewItem): Boolean {
+            // This checks for deep equality of data classes, which is usually sufficient
             return oldItem == newItem
         }
     }

@@ -4,9 +4,11 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels // Import for by viewModels()
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -17,6 +19,12 @@ import com.example.artdecode.presentation.artworkinfo.ArtworkInfoActivity
 class ReportActivity : AppCompatActivity() {
 
     private val viewModel: ReportViewModel by viewModels()
+
+    // Variables to hold the artwork data passed from ArtworkInfoActivity
+    private var artworkId: String? = null
+    private var capturedImageUri: String? = null
+    private var artStyle: String? = null
+    private var confidenceScore: Float? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,17 +37,32 @@ class ReportActivity : AppCompatActivity() {
             insets
         }
 
+        // Retrieve artwork data from the Intent
+        artworkId = intent.getStringExtra("ARTWORK_ID")
+        capturedImageUri = intent.getStringExtra("CAPTURED_IMAGE_URI")
+        artStyle = intent.getStringExtra("ART_STYLE")
+        confidenceScore = intent.getFloatExtra("CONFIDENCE_SCORE", -1f).takeIf { it != -1f }
+
+
         val backButton: ImageButton = findViewById(R.id.backButton)
         val submitButton: Button = findViewById(R.id.submitButton)
+        val reportInput: EditText = findViewById(R.id.reportInput)
 
         backButton.setOnClickListener {
-            viewModel.onBackClicked()
+            // Pass the retrieved artwork data to the ViewModel when back is clicked
+            viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
         }
 
         submitButton.setOnClickListener {
-            // In a real app, you might first gather data from EditTexts and pass to ViewModel
-            // e.g., viewModel.submitReport(titleEditText.text.toString(), descriptionEditText.text.toString())
-            viewModel.onSubmitClicked()
+            val reportText = reportInput.text.toString().trim()
+            if (reportText.isEmpty()) {
+                Toast.makeText(this, "Please enter a report description", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Disable submit button to prevent multiple submissions
+            submitButton.isEnabled = false
+            viewModel.onSubmitClicked(reportText)
         }
 
         observeViewModel()
@@ -47,13 +70,10 @@ class ReportActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.navigateToArtworkInfo.observe(this) { event ->
-            event.getContentIfNotHandled()?.let {
-                // Navigate back to ArtworkInfo (or simply finish if ArtworkInfo is always the previous screen)
-                // If ArtworkInfo is not guaranteed to be the direct parent, starting a new Intent is safer.
-                // However, if it's always just "back", then finish() might be enough.
-                // For this example, we'll keep the explicit navigation to be clear.
-                val intent = Intent(this, ArtworkInfoActivity::class.java)
-                // intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP // Optional: if you want to clear stack above ArtworkInfo
+            event.getContentIfNotHandled()?.let { artworkInfoBundle ->
+                val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
+                    putExtras(artworkInfoBundle) // Put the Bundle back into the Intent
+                }
                 startActivity(intent)
                 finish()
             }
@@ -65,13 +85,30 @@ class ReportActivity : AppCompatActivity() {
                     .setTitle("Success")
                     .setMessage("Report submitted successfully")
                     .setPositiveButton("OK") { _, _ ->
-                        finish() // Finish the activity after the dialog is dismissed
+                        // After success, also navigate back to the original ArtworkInfoActivity
+                        viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
                     }
                     .setOnCancelListener {
-                        finish() // Also finish if the dialog is cancelled (e.g., by pressing back)
+                        // Also navigate back if dialog is cancelled
+                        viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
                     }
                     .show()
             }
+        }
+
+        viewModel.showError.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { errorMessage ->
+                findViewById<Button>(R.id.submitButton).isEnabled = true // Re-enable submit button on error
+                AlertDialog.Builder(this)
+                    .setTitle("Error")
+                    .setMessage(errorMessage)
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        }
+
+        viewModel.isLoading.observe(this) { isLoading ->
+            findViewById<Button>(R.id.submitButton).isEnabled = !isLoading
         }
     }
 }

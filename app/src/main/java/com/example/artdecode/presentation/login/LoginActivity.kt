@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.artdecode.LoginState
 import com.example.artdecode.LoginViewModel
 import com.example.artdecode.R
+import com.example.artdecode.UserInfo
 import com.example.artdecode.presentation.signup.SignUpActivity
 import com.example.artdecode.databinding.ActivityLoginBinding
 import com.example.artdecode.presentation.main.MainActivity
@@ -35,6 +36,10 @@ class LoginActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "LoginActivity"
+        // Intent extra keys
+        const val EXTRA_USER_EMAIL = "extra_user_email"
+        const val EXTRA_USER_USERNAME = "extra_user_username"
+        const val EXTRA_USER_UID = "extra_user_uid"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,9 +103,18 @@ class LoginActivity : AppCompatActivity() {
                 // Observe navigation events
                 launch {
                     viewModel.navigateToHome.collect { event ->
-                        event?.getContentIfNotHandled()?.let { user ->
-                            Log.d(TAG, "Navigating to home for user: ${user.uid}")
-                            startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                        event?.getContentIfNotHandled()?.let { userInfo ->
+                            Log.d(TAG, "Navigating to home for user: ${userInfo.uid}")
+
+                            // Show welcome toast with user info
+                            showWelcomeToast(userInfo)
+
+                            val intent = Intent(this@LoginActivity, MainActivity::class.java).apply {
+                                putExtra(EXTRA_USER_EMAIL, userInfo.email)
+                                putExtra(EXTRA_USER_USERNAME, userInfo.username)
+                                putExtra(EXTRA_USER_UID, userInfo.uid)
+                            }
+                            startActivity(intent)
                             finish()
                         }
                     }
@@ -179,6 +193,8 @@ class LoginActivity : AppCompatActivity() {
                 Log.w(TAG, "Google Sign-In error: ${state.message}")
                 showGlobalError(state.message)
             }
+
+            else -> {}
         }
     }
 
@@ -223,6 +239,26 @@ class LoginActivity : AppCompatActivity() {
     private fun showGlobalError(message: String) {
         binding.errorHandlingText.text = message
         binding.errorHandlingText.isVisible = true
+    }
+
+    private fun showWelcomeToast(userInfo: UserInfo) {
+        val welcomeMessage = buildString {
+            append("Welcome, ")
+
+            userInfo.username?.let { username ->
+                if (username.isNotBlank()) {
+                    append(username)
+                    userInfo.email?.let { email -> append(" ($email)") }
+                } else {
+                    userInfo.email?.let { email -> append(email) }
+                }
+            } ?: userInfo.email?.let { email ->
+                append(email)
+            } ?: append("User")
+        }
+
+        Toast.makeText(this, welcomeMessage, Toast.LENGTH_LONG).show()
+        Log.d(TAG, "Showed welcome toast: $welcomeMessage")
     }
 
     private fun togglePasswordVisibility() {

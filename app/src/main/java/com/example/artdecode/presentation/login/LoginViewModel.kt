@@ -17,11 +17,22 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+
+// Data class to hold user information
+data class UserInfo(
+    val uid: String,
+    val email: String?,
+    val username: String?
+)
 
 // Represents the different states of the login process
 sealed class LoginState {
@@ -41,15 +52,16 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val credentialManager: CredentialManager = CredentialManager.create(application)
 
     // StateFlow for login state
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
-    // StateFlow for navigation events
-    private val _navigateToHome = MutableStateFlow<Event<FirebaseUser>?>(null)
-    val navigateToHome: StateFlow<Event<FirebaseUser>?> = _navigateToHome.asStateFlow()
+    // StateFlow for navigation events - now using UserInfo instead of FirebaseUser
+    private val _navigateToHome = MutableStateFlow<Event<UserInfo>?>(null)
+    val navigateToHome: StateFlow<Event<UserInfo>?> = _navigateToHome.asStateFlow()
 
     private val _navigateToSignUp = MutableStateFlow<Event<Unit>?>(null)
     val navigateToSignUp: StateFlow<Event<Unit>?> = _navigateToSignUp.asStateFlow()
@@ -65,14 +77,50 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private var password: String = ""
 
     init {
-        checkCurrentUser()
+        // Always sign out the current user when the ViewModel is initialized
+        // This ensures the login screen always starts from a logged-out state.
+        auth.signOut()
+        Log.d(TAG, "FirebaseAuth signed out at ViewModel init.")
+        // No need to checkCurrentUser() anymore if we're always signing out
     }
 
-    private fun checkCurrentUser() {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            _navigateToHome.value = Event(currentUser)
-        }
+    // This method is no longer needed as we're always signing out on init
+    // private fun checkCurrentUser() {
+    //     val currentUser = auth.currentUser
+    //     if (currentUser != null) {
+    //         fetchUserInfoAndNavigate(currentUser)
+    //     }
+    // }
+
+    private fun fetchUserInfoAndNavigate(firebaseUser: FirebaseUser) {
+        val userRef = database.getReference("users").child(firebaseUser.uid)
+
+        userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val username = snapshot.child("username").getValue(String::class.java)
+                val email = firebaseUser.email ?: snapshot.child("email").getValue(String::class.java)
+
+                val userInfo = UserInfo(
+                    uid = firebaseUser.uid,
+                    email = email,
+                    username = username
+                )
+
+                Log.d(TAG, "User info fetched - Email: $email, Username: $username")
+                _navigateToHome.value = Event(userInfo)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Failed to fetch user info", error.toException())
+                // Still navigate with basic info from FirebaseUser
+                val userInfo = UserInfo(
+                    uid = firebaseUser.uid,
+                    email = firebaseUser.email,
+                    username = firebaseUser.displayName // Fallback to display name if available
+                )
+                _navigateToHome.value = Event(userInfo)
+            }
+        })
     }
 
     fun updateEmail(newEmail: String) {
@@ -106,7 +154,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 if (user != null) {
                     Log.d(TAG, "signInWithEmail:success")
                     _loginState.value = LoginState.Success(user)
-                    _navigateToHome.value = Event(user)
+                    fetchUserInfoAndNavigate(user)
                 } else {
                     _loginState.value = LoginState.Error("Login successful but user data is null.")
                 }
@@ -227,7 +275,13 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 if (user != null) {
                     Log.d(TAG, "Google signInWithCredential:success")
                     _loginState.value = LoginState.Success(user)
-                    _navigateToHome.value = Event(user)
+
+                    // For Google Sign-In, also save/update user data in database if it's a new user
+                    if (result.additionalUserInfo?.isNewUser == true) {
+                        saveUserToDatabase(user)
+                    }
+
+                    fetchUserInfoAndNavigate(user)
                 } else {
                     _loginState.value = LoginState.Error("Google login successful but user data is null.")
                 }
@@ -237,6 +291,23 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 _toastMessage.value = Event("Google Authentication Failed.")
             }
         }
+    }
+
+    private fun saveUserToDatabase(user: FirebaseUser) {
+        val userRef = database.getReference("users").child(user.uid)
+        val userData = mapOf(
+            "email" to user.email,
+            "username" to (user.displayName ?: ""),
+            "provider" to "google"
+        )
+
+        userRef.setValue(userData)
+            .addOnSuccessListener {
+                Log.d(TAG, "User data saved to database")
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Failed to save user data", exception)
+            }
     }
 
     fun onSignUpClicked() {

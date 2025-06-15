@@ -19,7 +19,8 @@ import com.example.artdecode.R
 import com.example.artdecode.ScanFrameOverlay
 import com.example.artdecode.presentation.artworkinfo.ArtworkInfoActivity
 import com.example.artdecode.utils.Event
-import com.example.artdecode.data.model.ScanState
+import com.example.artdecode.data.model.ScanState // This import seems correct if ScanState is in data.model
+import com.example.artdecode.data.model.Artwork
 
 
 // Main Activity (View)
@@ -97,10 +98,12 @@ class ScanActivity : AppCompatActivity() {
             updateUI(state)
         }
 
-        // Handle navigation events
-        viewModel.navigateToArtworkInfo.observe(this, Event.EventObserver { uri ->
-            navigateToArtworkInfo(uri)
-        })
+        // Handle navigation events - Now passing the full Artwork object
+        viewModel.navigateToArtworkInfo.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { artwork ->
+                navigateToArtworkInfo(artwork)
+            }
+        }
 
         // Handle messages
         viewModel.showMessage.observe(this, Event.EventObserver { message ->
@@ -173,9 +176,16 @@ class ScanActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun navigateToArtworkInfo(uri: Uri) {
+    // Updated to accept the complete Artwork object
+    private fun navigateToArtworkInfo(artwork: Artwork) {
         val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
-            putExtra("CAPTURED_IMAGE_URI", uri.toString())
+            // Pass all relevant data as extras.
+            // It's crucial that ArtworkInfoActivity.getArtworkFromIntent()
+            // is updated to read these correctly.
+            putExtra("ARTWORK_ID", artwork.id)
+            putExtra("CAPTURED_IMAGE_URI", artwork.imageUri)
+            putExtra("ART_STYLE", artwork.artStyle)
+            putExtra("CONFIDENCE_SCORE", artwork.confidenceScore ?: 0f)
         }
         startActivity(intent)
         finish()

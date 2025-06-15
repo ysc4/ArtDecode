@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.tasks.await
 class SignUpViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
+    private val database = FirebaseDatabase.getInstance()
 
     // UI State flows
     private val _isLoading = MutableStateFlow(false)
@@ -38,41 +40,83 @@ class SignUpViewModel : ViewModel() {
     private val _confirmPasswordError = MutableStateFlow<String?>(null)
     val confirmPasswordError: StateFlow<String?> = _confirmPasswordError.asStateFlow()
 
+    // New StateFlow for terms and conditions error
+    private val _termsError = MutableStateFlow<String?>(null)
+    val termsError: StateFlow<String?> = _termsError.asStateFlow()
+
+
     private val _navigateToLogin = MutableStateFlow<Event<Unit>?>(null)
     val navigateToLogin: StateFlow<Event<Unit>?> = _navigateToLogin.asStateFlow()
 
     private val _toastMessage = MutableStateFlow<Event<String>?>(null)
     val toastMessage: StateFlow<Event<String>?> = _toastMessage.asStateFlow()
 
-    fun signUp(email: String, username: String, password: String, confirmPassword: String) {
-        if (!validateInputs(email, username, password, confirmPassword)) return
+    // Data class for user information
+    data class UserData(
+        val email: String = "",
+        val username: String = "",
+        val createdAt: Long = System.currentTimeMillis()
+    )
+
+    fun signUp(
+        email: String,
+        username: String,
+        password: String,
+        confirmPassword: String,
+        agreedToTerms: Boolean // New parameter
+    ) {
+        if (!validateInputs(email, username, password, confirmPassword, agreedToTerms)) return // Pass new parameter
 
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null
+            _errorMessage.value = null // Clear any general error before starting
 
             try {
-                // Create user
+                // Create user with email and password
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user
 
                 if (user != null) {
-                    // Update profile
+                    // Update Firebase Auth profile
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setDisplayName(username)
                         .build()
 
                     try {
                         user.updateProfile(profileUpdates).await()
-                        _toastMessage.value = Event("Account created successfully!")
                     } catch (e: Exception) {
-                        _toastMessage.value = Event("Account created. Profile update failed.")
+                        // Profile update failed, but continue with database storage if account was created
+                        // Log this or show a specific toast if desired
+                        _toastMessage.value = Event("Account created, but failed to set username.")
                     }
 
-                    _navigateToLogin.value = Event(Unit)
+                    // Store user data in Realtime Database
+                    val userData = UserData(
+                        email = email,
+                        username = username,
+                        createdAt = System.currentTimeMillis()
+                    )
+
+                    try {
+                        database.reference
+                            .child("users")
+                            .child(user.uid)
+                            .setValue(userData)
+                            .await()
+
+                        _toastMessage.value = Event("Account created successfully!")
+                        _navigateToLogin.value = Event(Unit)
+
+                    } catch (e: Exception) {
+                        // Database storage failed, but auth user was created
+                        _errorMessage.value = "Account created but failed to save user data: ${e.message}"
+                        _navigateToLogin.value = Event(Unit)
+                    }
+
                 } else {
                     _errorMessage.value = "User creation failed"
                 }
+
             } catch (e: Exception) {
                 _errorMessage.value = getErrorMessage(e)
             } finally {
@@ -81,8 +125,40 @@ class SignUpViewModel : ViewModel() {
         }
     }
 
-    private fun validateInputs(email: String, username: String, password: String, confirmPassword: String): Boolean {
-        clearErrors()
+    // Function to read user data from database (for future use)
+    suspend fun getUserData(userId: String): UserData? {
+        return try {
+            val snapshot = database.reference
+                .child("users")
+                .child(userId)
+                .get()
+                .await()
+
+            snapshot.getValue(UserData::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Function to get current user data
+    suspend fun getCurrentUserData(): UserData? {
+        val currentUser = auth.currentUser
+        return if (currentUser != null) {
+            getUserData(currentUser.uid)
+        } else {
+            null
+        }
+    }
+
+    // Modified validateInputs to include the terms checkbox check
+    private fun validateInputs(
+        email: String,
+        username: String,
+        password: String,
+        confirmPassword: String,
+        agreedToTerms: Boolean // New parameter
+    ): Boolean {
+        clearErrors() // Clear all errors at the start
         var hasError = false
 
         when {
@@ -129,15 +205,23 @@ class SignUpViewModel : ViewModel() {
             }
         }
 
+        // New validation for terms and conditions
+        if (!agreedToTerms) {
+            _termsError.value = "You must agree to the Terms and Conditions"
+            hasError = true
+        }
+
         return !hasError
     }
 
+    // Modified clearErrors to include the new terms error
     private fun clearErrors() {
         _emailError.value = null
         _usernameError.value = null
         _passwordError.value = null
         _confirmPasswordError.value = null
         _errorMessage.value = null
+        _termsError.value = null // Clear terms error
     }
 
     private fun getErrorMessage(exception: Throwable): String {
@@ -156,5 +240,7 @@ class SignUpViewModel : ViewModel() {
     fun clearMessages() {
         _toastMessage.value = null
         _navigateToLogin.value = null
+        // Potentially clear other errors if needed on destroy/recreation
+        // clearErrors() // Uncomment if you want errors to disappear on navigation away
     }
 }
