@@ -1,13 +1,13 @@
-package com.example.artdecode.presentation.artworkinfo
-
 import com.example.artdecode.data.model.Artwork
+import com.example.artdecode.utils.Event
 
 data class ArtworkInfoUiState(
-    val artwork: Artwork? = null, // Holds the full artwork data
-    val similarArtworks: List<Artwork> = emptyList(), // List of Artwork objects
-    val navigateBack: Boolean = false,
-    val navigateToScan: Boolean = false,
-    val navigateToReport: Boolean = false,
-    val navigateToSimilarArtwork: String? = null, // Holds String? ID of artwork to navigate to
-    val errorMessage: String? = null // For displaying transient errors
+    val artwork: Artwork? = null,
+    val similarArtworks: List<Artwork> = emptyList(),
+    val isLoading: Boolean = true,
+    val navigateBack: Event<Unit>? = null,
+    val navigateToScan: Event<Unit>? = null,
+    val navigateToReport: Event<Unit>? = null,
+    val navigateToSimilarArtwork: Event<String?>? = null,
+    val errorMessage: String? = null
 )

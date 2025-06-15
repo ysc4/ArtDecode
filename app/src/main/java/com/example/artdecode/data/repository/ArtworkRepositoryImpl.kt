@@ -7,57 +7,56 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow // Import for MutableStateFlow
-import kotlinx.coroutines.flow.callbackFlow // Keep for now if needed elsewhere, but getArtworks will change
-import kotlinx.coroutines.tasks.await // For await() on Firebase Tasks
-import java.util.UUID // Import UUID for generating new IDs if needed
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map // Import for map operator
+import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class ArtworkRepositoryImpl(
     private val context: Context
 ) : ArtworkRepository {
 
-    // Reference to the "artworks" node in Firebase Realtime Database
     private val databaseRef = FirebaseDatabase.getInstance().getReference("artworks")
-
-    // Use a MutableStateFlow to hold and emit the list of artworks
-    // This allows for immediate local updates before Firebase listeners might fire
     private val _allArtworksFlow = MutableStateFlow<List<Artwork>>(emptyList())
 
-    // Initialize the Firebase listener to continuously update _allArtworksFlow
     init {
+        // This listener keeps _allArtworksFlow up-to-date with Firebase changes
         databaseRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val artworks = snapshot.children.mapNotNull { childSnapshot ->
-                    // Directly map to Artwork class; isFavorite should be part of the Firebase data
-                    childSnapshot.getValue(Artwork::class.java)?.copy(id = childSnapshot.key)
+                    val artwork = childSnapshot.getValue(Artwork::class.java)?.copy(id = childSnapshot.key)
+                    // IMPORTANT: If your Firebase database has both 'favorite' and 'isFavorite' fields
+                    // you MUST ensure that only 'isFavorite' is used here, or migrate your data.
+                    // If 'favorite' exists and 'isFavorite' does not, you might need to handle it.
+                    // For example: childSnapshot.child("favorite").getValue(Boolean::class.java) ?: false
+                    artwork
                 }
-                _allArtworksFlow.value = artworks // Update the internal flow
-                Log.d(
-                    "ArtworkRepository",
-                    "Firebase listener updated _allArtworksFlow with ${artworks.size} artworks."
-                )
+                _allArtworksFlow.value = artworks
+                Log.d("ArtworkRepository", "Firebase listener updated _allArtworksFlow with ${artworks.size} artworks.")
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(
-                    "ArtworkRepository",
-                    "Failed to read artworks from Firebase: ${error.message}",
-                    error.toException()
-                )
+                Log.e("ArtworkRepository", "Failed to read artworks from Firebase: ${error.message}", error.toException())
             }
         })
     }
 
-    // Now, getArtworks directly exposes the internal _allArtworksFlow
     override fun getArtworks(): Flow<List<Artwork>> = _allArtworksFlow
+
+    // NEW: Implementation for getArtworkFlowById
+    override fun getArtworkFlowById(artworkId: String): Flow<Artwork?> {
+        // We can map from the _allArtworksFlow to get a single artwork's live updates
+        return _allArtworksFlow.map { artworks ->
+            artworks.find { it.id == artworkId }
+        }
+    }
 
     override suspend fun getArtworkById(artworkId: String): Artwork? {
         return try {
             val snapshot = databaseRef.child(artworkId).get().await()
-            // isFavorite will be loaded directly into the Artwork object from Firebase
             snapshot.getValue(Artwork::class.java)?.copy(id = snapshot.key)
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error getting artwork by ID $artworkId: ${e.message}")
@@ -65,33 +64,27 @@ class ArtworkRepositoryImpl(
         }
     }
 
-    // Save/Update artwork in Firebase
-    // Changed return type to Artwork (non-nullable) as it throws on error
     override suspend fun saveArtwork(artwork: Artwork): Artwork {
-        val artworkId = artwork.id ?: databaseRef.push().key ?: UUID.randomUUID()
-            .toString() // Generate unique ID if not present
-        val artworkRef = databaseRef.child(artworkId)
+        val artworkId = artwork.id ?: databaseRef.push().key ?: UUID.randomUUID().toString()
         val artworkToSave = artwork.copy(id = artworkId) // Ensure ID is part of the object saved
 
         return try {
-            artworkRef.setValue(artworkToSave).await() // Save to Firebase
+            databaseRef.child(artworkId).setValue(artworkToSave).await()
             Log.d("ArtworkRepository", "Artwork saved to Firebase: ${artworkToSave.id}")
-            artworkToSave // Return the saved artwork with its definitive ID
+            artworkToSave
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error saving artwork: ${e.message}")
-            throw e // Rethrow error to be handled by ViewModel/caller
+            throw e
         }
     }
 
-    // NEW METHOD: Delete artwork from Firebase and update local flow
     override suspend fun deleteArtwork(artworkId: String) {
         try {
             databaseRef.child(artworkId).removeValue().await()
             Log.d("ArtworkRepository", "Artwork deleted from Firebase: $artworkId")
-
-            // Update local flow immediately for faster UI response
-            _allArtworksFlow.value = _allArtworksFlow.value.filter { it.id != artworkId }
-            Log.d("ArtworkRepository", "Locally removed artwork $artworkId from _allArtworksFlow")
+            // Local flow update is handled by the ValueEventListener.
+            // For immediate UI update, you *could* filter _allArtworksFlow.value = _allArtworksFlow.value.filter { it.id != artworkId }
+            // but the listener will eventually do it anyway.
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error deleting artwork $artworkId: ${e.message}")
             throw e
@@ -100,48 +93,47 @@ class ArtworkRepositoryImpl(
 
     override suspend fun toggleFavorite(artworkId: String) {
         try {
+            // Ensure we are only interacting with the 'isFavorite' field in Firebase
             val snapshot = databaseRef.child(artworkId).child("isFavorite").get().await()
             val currentFavoriteState = snapshot.getValue(Boolean::class.java) ?: false
             val newFavoriteState = !currentFavoriteState
 
             databaseRef.child(artworkId).child("isFavorite").setValue(newFavoriteState).await()
-            Log.d("ArtworkRepository", "Toggled favorite for $artworkId to $newFavoriteState")
+            Log.d("ArtworkRepository", "Toggled favorite for $artworkId to $newFavoriteState (using isFavorite field)")
 
-            // Optionally, update the local _allArtworksFlow immediately for faster UI response
-            // The Firebase listener will eventually update it, but this is for instant feedback.
-            val updatedArtwork = _allArtworksFlow.value.find { it.id == artworkId }
-                ?.copy(isFavorite = newFavoriteState)
-            updatedArtwork?.let {
-                updateArtworkInFlow(it)
-            }
+            // The _allArtworksFlow listener will automatically pick this change up and update,
+            // which will then propagate to any UIs observing that flow (like ArtworkInfoViewModel).
+            // No explicit updateArtworkInFlow call needed here if the listener handles it.
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error toggling favorite for $artworkId: ${e.message}")
-            throw e // Rethrow or handle error appropriately
+            throw e
         }
     }
 
+    // Ensure these methods also consistently use 'isFavorite'
     override suspend fun getFavoriteState(artworkId: String): Boolean {
         return try {
             val snapshot = databaseRef.child(artworkId).child("isFavorite").get().await()
             snapshot.getValue(Boolean::class.java) ?: false
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error getting favorite state for $artworkId: ${e.message}")
-            false // Default to false on error
+            false
         }
     }
 
     override suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean) {
         try {
             databaseRef.child(artworkId).child("isFavorite").setValue(isFavorite).await()
-            Log.d("ArtworkRepository", "Saved favorite state for $artworkId to $isFavorite")
+            Log.d("ArtworkRepository", "Saved favorite state for $artworkId to $isFavorite (using isFavorite field)")
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error saving favorite state for $artworkId: ${e.message}")
-            throw e // Rethrow or handle error appropriately
+            throw e
         }
     }
 
-    // This method updates the local _allArtworksFlow with a modified artwork
     override fun updateArtworkInFlow(artwork: Artwork) {
+        // This utility method can be used for local UI updates if the Firebase listener is too slow,
+        // but often the listener's update is sufficient for consistency.
         _allArtworksFlow.value = _allArtworksFlow.value.map {
             if (it.id == artwork.id) artwork else it
         }
@@ -159,24 +151,18 @@ class ArtworkRepositoryImpl(
                 val similarArtworks = snapshot.children.mapNotNull { childSnapshot ->
                     childSnapshot.getValue(Artwork::class.java)?.copy(id = childSnapshot.key)
                 }.filter {
-                    // Exclude the current artwork from the similar list
                     it.id != excludeArtworkId
                 }
-                trySend(similarArtworks).isSuccess // Emit the list of similar artworks
+                trySend(similarArtworks).isSuccess
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(
-                    "ArtworkRepository",
-                    "Failed to read similar artworks for style $artStyle: ${error.message}"
-                )
-                close(error.toException()) // Close the flow with an exception
+                Log.e("ArtworkRepository", "Failed to read similar artworks for style $artStyle: ${error.message}")
+                close(error.toException())
             }
         }
 
         query.addValueEventListener(valueEventListener)
-
-        // Remove the listener when the flow is cancelled
         awaitClose { query.removeEventListener(valueEventListener) }
     }
 }

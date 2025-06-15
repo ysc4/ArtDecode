@@ -21,6 +21,7 @@ import com.example.artdecode.presentation.scan.ScanActivity
 import com.example.artdecode.presentation.report.ReportActivity
 import com.example.artdecode.presentation.login.LoginActivity
 import com.example.artdecode.utils.ArtStyleDescriptionProvider
+import com.example.artdecode.presentation.artworkinfo.ArtworkInfoUiState
 
 import kotlinx.coroutines.launch
 
@@ -127,7 +128,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 uiState.errorMessage?.let { msg ->
                     Toast.makeText(this@ArtworkInfoActivity, msg, Toast.LENGTH_LONG).show()
                     // Clear the error message after showing
-                    viewModel.onNavigationHandled()
+                    viewModel.onNavigationHandled() // This clears the error message flag
                 }
             }
         }
@@ -150,21 +151,17 @@ class ArtworkInfoActivity : AppCompatActivity() {
             artworkStyleTextView.text = artwork.artStyle ?: "N/A"
             confidenceScoreTextView.text = artwork.confidenceScore?.let {
                 String.format("%.2f%%", it * 100)
-            } ?: "N/A Confidence"
+            } ?: "N/A"
 
-            // Set the art style description
             styleDescriptionTextView.text =
                 ArtStyleDescriptionProvider.getStyleDescription(artwork.artStyle)
 
-            // Set the art style image
             val styleImageResId = ArtStyleDescriptionProvider.getStyleImageResId(artwork.artStyle)
             artStyleImageView.setImageResource(styleImageResId)
 
-            // Set favorite button state
             favoriteButton.setImageResource(if (artwork.isFavorite) R.drawable.active_heart else R.drawable.inactive_heart)
 
         } ?: run {
-            // Handle case where artwork data is null
             artworkImageView.setImageResource(R.drawable.placeholder_image)
             artworkStyleTextView.text = "N/A"
             confidenceScoreTextView.text = "N/A"
@@ -173,7 +170,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
             favoriteButton.setImageResource(R.drawable.inactive_heart)
         }
 
-        // Similar artworks - now filtered by user
         similarArtworksContainer.removeAllViews()
         val inflater = layoutInflater
 
@@ -222,7 +218,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     private fun handleNavigation(uiState: ArtworkInfoUiState) {
         when {
-            uiState.navigateBack -> {
+            uiState.navigateBack?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
                 val intent = Intent(this, MainActivity::class.java).apply {
                     putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
@@ -230,9 +226,8 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
                 finish()
-                viewModel.onNavigationHandled()
             }
-            uiState.navigateToScan -> {
+            uiState.navigateToScan?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
                 val intent = Intent(this, ScanActivity::class.java).apply {
                     putExtra(ScanActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(ScanActivity.EXTRA_USER_USERNAME, userUsername)
@@ -240,12 +235,10 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
                 finish()
-                viewModel.onNavigationHandled()
             }
-            uiState.navigateToReport -> {
+            uiState.navigateToReport?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
+                val currentArtwork = uiState.artwork
                 val intent = Intent(this, ReportActivity::class.java).apply {
-                    val currentArtwork = uiState.artwork
-
                     currentArtwork?.let {
                         if (it.id != null) {
                             putExtra("ARTWORK_ID", it.id)
@@ -264,18 +257,17 @@ class ArtworkInfoActivity : AppCompatActivity() {
                     putExtra(LoginActivity.EXTRA_USER_UID, userUid)
                 }
                 startActivity(intent)
-                viewModel.onNavigationHandled()
             }
-            uiState.navigateToSimilarArtwork != null -> {
+            uiState.navigateToSimilarArtwork?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
+                val artworkId = uiState.navigateToSimilarArtwork.peekContent() // Use peekContent() to get data without marking as handled
                 val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
-                    putExtra("ARTWORK_ID", uiState.navigateToSimilarArtwork)
+                    putExtra("ARTWORK_ID", artworkId)
                     // Pass user information to the next ArtworkInfoActivity
                     putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
                     putExtra(LoginActivity.EXTRA_USER_UID, userUid)
                 }
                 startActivity(intent)
-                viewModel.onNavigationHandled()
             }
         }
     }
