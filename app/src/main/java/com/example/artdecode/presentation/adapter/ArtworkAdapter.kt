@@ -73,7 +73,7 @@ class ArtworkAdapter(
         // Corrected TextView IDs to match item_collection.xml
         private val artStyleTextView: TextView = itemView.findViewById(R.id.artStyle)
         private val confidenceTextView: TextView = itemView.findViewById(R.id.confidenceScore)
-        private val favoriteIcon: ImageView = itemView.findViewById(R.id.favoritedButton)
+        private val favoriteIcon: ImageView = itemView.findViewById(R.id.favoriteButton)
 
         fun bind(artwork: Artwork) { // Bind with the combined Artwork object
             // Load image using Glide, handling Uri String
