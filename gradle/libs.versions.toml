@@ -25,6 +25,7 @@ firebaseDatabaseKtx = "21.0.0"
 tensorflowLiteSupport = "0.1.0"
 tensorflowLiteMetadata = "0.2.0"
 tensorflowLiteGpu = "2.3.0"
+uiAndroid = "1.8.2"
 
 [libraries]
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity" }
@@ -57,6 +58,7 @@ firebase-database-ktx = { group = "com.google.firebase", name = "firebase-databa
 tensorflow-lite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
 tensorflow-lite-metadata = { group = "org.tensorflow", name = "tensorflow-lite-metadata", version.ref = "tensorflowLiteMetadata" }
 tensorflow-lite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tensorflowLiteGpu" }
+androidx-ui-android = { group = "androidx.compose.ui", name = "ui-android", version.ref = "uiAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

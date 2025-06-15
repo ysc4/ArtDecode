@@ -37,7 +37,7 @@ import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.exifinterface.media.ExifInterface
-// No need for android.graphics.Color if autoCrop is not used
+import com.example.artdecode.data.repository.SettingsRepository
 
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -55,6 +55,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private var lastPreviewWidth: Float = 0f
     private var lastPreviewHeight: Float = 0f
 
+    // Store current user ID
+    private var currentUserId: String? = null
 
     private val _scanState = MutableLiveData<ScanState>(ScanState())
     val scanState: LiveData<ScanState> = _scanState
@@ -73,6 +75,23 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _openGallery = MutableLiveData<Event<Unit>>()
     val openGallery: LiveData<Event<Unit>> = _openGallery
+
+    private lateinit var settingsRepository: SettingsRepository
+
+    // Add this in your init block or constructor
+    init {
+        settingsRepository = SettingsRepository(getApplication())
+    }
+
+    fun isGalleryEnabled(): Boolean {
+        return !settingsRepository.isCameraOnlyMode()
+    }
+
+    // Function to set current user ID
+    fun setCurrentUserId(userId: String) {
+        currentUserId = userId
+        Log.d(TAG, "Current user ID set to: $userId")
+    }
 
     fun checkCameraPermission(isGranted: Boolean) {
         if (isGranted) {
@@ -167,9 +186,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     fun onImageSelectedFromGallery(uri: Uri?) {
         if (uri != null && repository.validateImageUri(uri)) {
             val uniqueId = UUID.randomUUID().toString()
-            // For gallery images, we will still apply the frame-based crop if you have one,
-            // or just use the whole image if no frame context is available for gallery.
-            // Simplified for strict frame crop:
             cropGalleryImageToFrame(uri, uniqueId) { croppedUri ->
                 classifyAndSaveImage(croppedUri, uniqueId)
             }
@@ -218,7 +234,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     val savedUri = output.savedUri
                     if (savedUri != null) {
-                        // Pass current PreviewView dimensions for accurate frame scaling
                         cropImageToFrame(savedUri, scanFrame, uniqueId, lastPreviewWidth, lastPreviewHeight) { croppedUri ->
                             updateState {
                                 it.copy(
@@ -265,8 +280,12 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                         id = artworkId,
                         imageUri = imageUri.toString(),
                         artStyle = classificationResult.artStyle,
-                        confidenceScore = classificationResult.confidence
+                        confidenceScore = classificationResult.confidence,
+                        userId = currentUserId, // Add user ID to the artwork
+                        capturedAt = System.currentTimeMillis() // Optional: add timestamp
                     )
+
+                    Log.d(TAG, "Saving artwork with user ID: ${currentUserId}")
                     val savedArtwork = artworkRepository.saveArtwork(artworkToSave)
 
                     updateState { it.copy(isProcessing = false) }
@@ -295,7 +314,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Crop captured image to scan frame bounds (NO auto-cropping)
+    // Crop captured image to scan frame bounds
     private fun cropImageToFrame(
         originalUri: Uri,
         scanFrame: RectF,
@@ -312,23 +331,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 inputStream?.close()
 
                 if (originalBitmap != null) {
-                    // 1. Get EXIF orientation and rotate the bitmap
                     val rotationDegrees = getExifOrientation(getApplication(), originalUri)
                     val orientedBitmap = rotateBitmap(originalBitmap, rotationDegrees)
 
-                    // 2. Calculate scaling factors from preview dimensions to the oriented bitmap dimensions
-                    // These are crucial for mapping the scanFrame (which is relative to preview)
-                    // to the full-resolution bitmap.
                     val scaleFactorWidth = if (previewViewWidth > 0) orientedBitmap.width.toFloat() / previewViewWidth else 1f
                     val scaleFactorHeight = if (previewViewHeight > 0) orientedBitmap.height.toFloat() / previewViewHeight else 1f
 
-                    // 3. Calculate actual pixel coordinates for cropping on the oriented bitmap
                     val cropX = (scanFrame.left * scaleFactorWidth).toInt().coerceAtLeast(0)
                     val cropY = (scanFrame.top * scaleFactorHeight).toInt().coerceAtLeast(0)
                     val cropWidth = (scanFrame.width() * scaleFactorWidth).toInt().coerceAtMost(orientedBitmap.width - cropX)
                     val cropHeight = (scanFrame.height() * scaleFactorHeight).toInt().coerceAtMost(orientedBitmap.height - cropY)
 
-                    // Ensure dimensions are positive before creating bitmap
                     val croppedBitmap = if (cropWidth > 0 && cropHeight > 0) {
                         Bitmap.createBitmap(
                             orientedBitmap,
@@ -338,17 +351,15 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                             cropHeight
                         )
                     } else {
-                        // If calculated crop is invalid, use the whole oriented bitmap as fallback
                         Log.w(TAG, "Invalid crop dimensions. Using whole oriented bitmap.")
                         orientedBitmap
                     }
 
                     val croppedUri = saveCroppedImage(croppedBitmap, artworkId)
 
-                    // Recycle bitmaps
                     if (orientedBitmap != originalBitmap) originalBitmap.recycle()
-                    if (croppedBitmap != orientedBitmap) orientedBitmap.recycle() // Recycle oriented if it's different from cropped
-                    croppedBitmap.recycle() // Always recycle the final created bitmap
+                    if (croppedBitmap != orientedBitmap) orientedBitmap.recycle()
+                    croppedBitmap.recycle()
 
                     ContextCompat.getMainExecutor(getApplication()).execute {
                         callback(croppedUri)
@@ -356,22 +367,18 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     Log.e(TAG, "Failed to decode original bitmap for cropping.")
                     ContextCompat.getMainExecutor(getApplication()).execute {
-                        callback(originalUri) // Fallback to original if decoding fails
+                        callback(originalUri)
                     }
                 }
             } catch (exception: Exception) {
                 Log.e(TAG, "Image cropping or rotation failed", exception)
                 ContextCompat.getMainExecutor(getApplication()).execute {
-                    callback(originalUri) // Fallback to original if any error occurs
+                    callback(originalUri)
                 }
             }
         }
-    } // <-- MISSING CLOSING BRACE ADDED HERE
+    }
 
-    // New function to crop gallery images strictly to a frame (if applicable)
-    // For gallery, we don't have previewViewWidth/Height, so we assume the frameRect
-    // should be applied relative to the gallery image's full dimensions IF a frame is desired.
-    // If no specific frame for gallery, just pass the original URI.
     private fun cropGalleryImageToFrame(
         originalUri: Uri,
         artworkId: String,
@@ -410,13 +417,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     private fun saveCroppedImage(bitmap: Bitmap, artworkId: String): Uri {
         val name = "cropped_${artworkId}_${SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())}"
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            // Corrected check: RELATIVE_PATH was introduced in API 29 (Android Q)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/ArtDecode")
             }

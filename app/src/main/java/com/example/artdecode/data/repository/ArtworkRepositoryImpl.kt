@@ -83,6 +83,21 @@ class ArtworkRepositoryImpl(
         }
     }
 
+    // NEW METHOD: Delete artwork from Firebase and update local flow
+    override suspend fun deleteArtwork(artworkId: String) {
+        try {
+            databaseRef.child(artworkId).removeValue().await()
+            Log.d("ArtworkRepository", "Artwork deleted from Firebase: $artworkId")
+
+            // Update local flow immediately for faster UI response
+            _allArtworksFlow.value = _allArtworksFlow.value.filter { it.id != artworkId }
+            Log.d("ArtworkRepository", "Locally removed artwork $artworkId from _allArtworksFlow")
+        } catch (e: Exception) {
+            Log.e("ArtworkRepository", "Error deleting artwork $artworkId: ${e.message}")
+            throw e
+        }
+    }
+
     override suspend fun toggleFavorite(artworkId: String) {
         try {
             val snapshot = databaseRef.child(artworkId).child("isFavorite").get().await()

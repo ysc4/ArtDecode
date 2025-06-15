@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-// Removed unused import: import com.example.artdecode.R
 
 class ArtworkInfoViewModel(
     private val artworkRepository: ArtworkRepository
@@ -17,6 +16,13 @@ class ArtworkInfoViewModel(
 
     private val _uiState = MutableStateFlow(ArtworkInfoUiState())
     val uiState: StateFlow<ArtworkInfoUiState> = _uiState.asStateFlow()
+
+    // Add current user ID to filter similar artworks
+    private var currentUserId: String? = null
+
+    fun setCurrentUserId(userId: String) {
+        currentUserId = userId
+    }
 
     fun loadArtworkInfo(
         artworkId: String? = null,
@@ -38,7 +44,8 @@ class ArtworkInfoViewModel(
                     imageUri = capturedImageUri,
                     artStyle = artStyle,
                     confidenceScore = confidenceScore,
-                    isFavorite = false // Default for new artwork
+                    isFavorite = false, // Default for new artwork
+                    userId = currentUserId // Set the current user ID
                 )
             } else {
                 null
@@ -48,10 +55,19 @@ class ArtworkInfoViewModel(
                 _uiState.value = _uiState.value.copy(artwork = currentArtwork) // Update artwork first
 
                 // NOW FETCH SIMILAR ARTWORKS BASED ON THE LOADED ARTWORK'S STYLE
+                // BUT ONLY FOR THE CURRENT USER
                 currentArtwork.artStyle?.let { style ->
                     artworkRepository.getSimilarArtworks(style, currentArtwork.id)
-                        .collect { similarArtworksList ->
-                            _uiState.value = _uiState.value.copy(similarArtworks = similarArtworksList)
+                        .collect { allSimilarArtworks ->
+                            // Filter similar artworks by current user ID
+                            val filteredSimilarArtworks = if (currentUserId != null) {
+                                allSimilarArtworks.filter { artwork ->
+                                    artwork.userId == currentUserId
+                                }
+                            } else {
+                                allSimilarArtworks
+                            }
+                            _uiState.value = _uiState.value.copy(similarArtworks = filteredSimilarArtworks)
                         }
                 }
 

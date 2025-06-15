@@ -19,7 +19,7 @@ import com.example.artdecode.data.repository.ArtworkRepositoryImpl
 import com.example.artdecode.presentation.main.MainActivity
 import com.example.artdecode.presentation.scan.ScanActivity
 import com.example.artdecode.presentation.report.ReportActivity
-// import com.example.artdecode.presentation.artworkinfo.ArtworkInfoUiState // Explicitly import if needed - usually not needed if it's in the same package
+import com.example.artdecode.presentation.login.LoginActivity
 import com.example.artdecode.utils.ArtStyleDescriptionProvider
 
 import kotlinx.coroutines.launch
@@ -37,8 +37,13 @@ class ArtworkInfoActivity : AppCompatActivity() {
     private lateinit var scanMoreButton: Button
     private lateinit var reportButton: ImageButton
     private lateinit var backButton: ImageButton
-    private lateinit var styleDescriptionTextView: TextView // Assuming you already have this for the description
-    private lateinit var artStyleImageView: ImageView // Declare the new ImageView
+    private lateinit var styleDescriptionTextView: TextView
+    private lateinit var artStyleImageView: ImageView
+
+    // User information
+    private var userEmail: String? = null
+    private var userUsername: String? = null
+    private var userUid: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +51,9 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         supportActionBar?.hide()
+
+        // Extract user information from intent
+        extractUserInfoFromIntent()
 
         setupViewModel()
         initializeViews()
@@ -66,10 +74,21 @@ class ArtworkInfoActivity : AppCompatActivity() {
         observeViewModel()
     }
 
+    private fun extractUserInfoFromIntent() {
+        userEmail = intent.getStringExtra(LoginActivity.EXTRA_USER_EMAIL)
+        userUsername = intent.getStringExtra(LoginActivity.EXTRA_USER_USERNAME)
+        userUid = intent.getStringExtra(LoginActivity.EXTRA_USER_UID)
+    }
+
     private fun setupViewModel() {
         val repository = ArtworkRepositoryImpl(this)
         val factory = ArtworkInfoViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[ArtworkInfoViewModel::class.java]
+
+        // Set the current user ID in the ViewModel to filter similar artworks
+        userUid?.let { uid ->
+            viewModel.setCurrentUserId(uid)
+        }
     }
 
     private fun initializeViews() {
@@ -81,8 +100,8 @@ class ArtworkInfoActivity : AppCompatActivity() {
         scanMoreButton = findViewById<Button>(R.id.scanMoreButton)
         reportButton = findViewById<ImageButton>(R.id.reportButton)
         backButton = findViewById<ImageButton>(R.id.backButton)
-        styleDescriptionTextView = findViewById<TextView>(R.id.styleDescription) // Initialize your existing description TextView
-        artStyleImageView = findViewById<ImageView>(R.id.artStyleImage) // Initialize the new ImageView
+        styleDescriptionTextView = findViewById<TextView>(R.id.styleDescription)
+        artStyleImageView = findViewById<ImageView>(R.id.artStyleImage)
     }
 
     private fun setupClickListeners() {
@@ -108,7 +127,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 uiState.errorMessage?.let { msg ->
                     Toast.makeText(this@ArtworkInfoActivity, msg, Toast.LENGTH_LONG).show()
                     // Clear the error message after showing
-                    viewModel.onNavigationHandled() // Assuming you have a method to clear the error message in ViewModel
+                    viewModel.onNavigationHandled()
                 }
             }
         }
@@ -121,7 +140,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 Glide.with(this)
                     .load(Uri.parse(uriString))
                     .placeholder(R.drawable.placeholder_image)
-                    .error(R.drawable.placeholder_image) // Ensure this drawable exists
+                    .error(R.drawable.placeholder_image)
                     .into(artworkImageView)
             } ?: run {
                 artworkImageView.setImageResource(R.drawable.placeholder_image)
@@ -150,11 +169,11 @@ class ArtworkInfoActivity : AppCompatActivity() {
             artworkStyleTextView.text = "N/A"
             confidenceScoreTextView.text = "N/A"
             styleDescriptionTextView.text = "Artwork details not available."
-            artStyleImageView.setImageResource(R.drawable.default_art_style_image) // Show default for style image too
+            artStyleImageView.setImageResource(R.drawable.default_art_style_image)
             favoriteButton.setImageResource(R.drawable.inactive_heart)
         }
 
-        // Similar artworks
+        // Similar artworks - now filtered by user
         similarArtworksContainer.removeAllViews()
         val inflater = layoutInflater
 
@@ -172,11 +191,9 @@ class ArtworkInfoActivity : AppCompatActivity() {
         }
 
         uiState.similarArtworks.forEach { similarArtwork ->
-            // Use item_artwork_card.xml for similar artworks as intended
             val artworkCard = inflater.inflate(R.layout.item_artwork, similarArtworksContainer, false)
 
-            // Get views from item_artwork_card.xml
-            val artworkImage = artworkCard.findViewById<ImageView>(R.id.similarArtworkImage) // Image in the card
+            val artworkImage = artworkCard.findViewById<ImageView>(R.id.similarArtworkImage)
 
             similarArtwork.imageUri?.let { uriString ->
                 Glide.with(this)
@@ -189,7 +206,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
             }
 
             val params = LinearLayout.LayoutParams(
-                resources.getDimensionPixelSize(R.dimen.similar_artwork_card), // Use a dimension resource
+                resources.getDimensionPixelSize(R.dimen.similar_artwork_card),
                 resources.getDimensionPixelSize(R.dimen.similar_artwork_card)
             )
             params.setMargins(0, 0, 20, 0)
@@ -203,29 +220,36 @@ class ArtworkInfoActivity : AppCompatActivity() {
         }
     }
 
-
     private fun handleNavigation(uiState: ArtworkInfoUiState) {
         when {
             uiState.navigateBack -> {
-                startActivity(Intent(this, MainActivity::class.java))
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
+                    putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
+                    putExtra(LoginActivity.EXTRA_USER_UID, userUid)
+                }
+                startActivity(intent)
                 finish()
                 viewModel.onNavigationHandled()
             }
             uiState.navigateToScan -> {
-                startActivity(Intent(this, ScanActivity::class.java))
+                val intent = Intent(this, ScanActivity::class.java).apply {
+                    putExtra(ScanActivity.EXTRA_USER_EMAIL, userEmail)
+                    putExtra(ScanActivity.EXTRA_USER_USERNAME, userUsername)
+                    putExtra(ScanActivity.EXTRA_USER_UID, userUid)
+                }
+                startActivity(intent)
                 finish()
                 viewModel.onNavigationHandled()
             }
             uiState.navigateToReport -> {
                 val intent = Intent(this, ReportActivity::class.java).apply {
-                    val currentArtwork = uiState.artwork // Get the current artwork from the UI state
+                    val currentArtwork = uiState.artwork
 
                     currentArtwork?.let {
-                        // Prioritize artworkId if available (for saved artworks)
                         if (it.id != null) {
                             putExtra("ARTWORK_ID", it.id)
                         } else {
-                            // If no ID, pass the original scan details to re-create the state
                             putExtra("CAPTURED_IMAGE_URI", it.imageUri)
                             putExtra("ART_STYLE", it.artStyle)
                             it.confidenceScore?.let { score ->
@@ -233,6 +257,11 @@ class ArtworkInfoActivity : AppCompatActivity() {
                             }
                         }
                     }
+
+                    // Pass user information
+                    putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
+                    putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
+                    putExtra(LoginActivity.EXTRA_USER_UID, userUid)
                 }
                 startActivity(intent)
                 viewModel.onNavigationHandled()
@@ -240,6 +269,10 @@ class ArtworkInfoActivity : AppCompatActivity() {
             uiState.navigateToSimilarArtwork != null -> {
                 val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
                     putExtra("ARTWORK_ID", uiState.navigateToSimilarArtwork)
+                    // Pass user information to the next ArtworkInfoActivity
+                    putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
+                    putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
+                    putExtra(LoginActivity.EXTRA_USER_UID, userUid)
                 }
                 startActivity(intent)
                 viewModel.onNavigationHandled()
