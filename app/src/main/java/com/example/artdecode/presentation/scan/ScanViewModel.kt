@@ -1,5 +1,3 @@
-// src/main/java/com/example/artdecode/presentation/scan/ScanViewModel.kt
-
 package com.example.artdecode.presentation.scan
 
 import android.app.Application
@@ -49,19 +47,17 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private val artworkRepository = ArtworkRepositoryImpl(application)
-    private val repository = ScanRepository() // Your ScanRepository instance
+    private val repository = ScanRepository()
     private val artStyleClassifier = ArtStyleClassifier(application)
     private val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    var imageCapture: ImageCapture? = null // Made public so fragment can access resolutionInfo
+    var imageCapture: ImageCapture? = null
     private var currentScanFrame: RectF? = null
     private var lastPreviewWidth: Float = 0f
     private var lastPreviewHeight: Float = 0f
 
-    // New properties to hold camera and preview configuration
     private var cameraOutputAspectRatio: Float = 0f
-    private var previewViewScaleType: String = "FILL_CENTER" // Default to FILL_CENTER
+    private var previewViewScaleType: String = "FILL_CENTER"
 
-    // Store current user ID
     private var currentUserId: String? = null
 
     private val _scanState = MutableLiveData<ScanState>(ScanState())
@@ -82,11 +78,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _openGallery = MutableLiveData<Event<Unit>>()
     val openGallery: LiveData<Event<Unit>> = _openGallery
 
-    private lateinit var settingsRepository: SettingsRepository
-
-    init {
-        settingsRepository = SettingsRepository(getApplication())
-    }
+    private var settingsRepository: SettingsRepository = SettingsRepository(getApplication())
 
     fun isGalleryEnabled(): Boolean {
         return !settingsRepository.isCameraOnlyMode()
@@ -161,10 +153,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 imageCapture
             )
             Log.d(TAG, "Camera use cases bound successfully")
-            // After binding, attempt to get the camera's output aspect ratio.
-            // This might be more reliably available after the preview use case is active.
-            imageCapture?.resolutionInfo?.let { resolutionInfo -> // Changed 'resolution' to 'resolutionInfo' for clarity
-                cameraOutputAspectRatio = resolutionInfo.resolution.width.toFloat() / resolutionInfo.resolution.height.toFloat() // Access .resolution.width/height
+            imageCapture?.resolutionInfo?.let { resolutionInfo ->
+                cameraOutputAspectRatio = resolutionInfo.resolution.width.toFloat() / resolutionInfo.resolution.height.toFloat()
                 Log.d(TAG, "Camera Output Aspect Ratio detected: $cameraOutputAspectRatio")
             } ?: Log.w(TAG, "Could not determine camera output aspect ratio from ImageCapture.")
 
@@ -174,17 +164,15 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // New setters to be called from the Fragment
     fun setPreviewViewScaleType(scaleType: String) {
         this.previewViewScaleType = scaleType
         Log.d(TAG, "PreviewView Scale Type set to: $scaleType")
     }
 
     fun updateScanFrame(viewWidth: Float, viewHeight: Float) {
-        // Ensure aspect ratio is set, use a fallback if not yet available
         if (cameraOutputAspectRatio == 0f) {
             Log.w(TAG, "Camera output aspect ratio not set, using default 4:3 for scan frame calculation.")
-            cameraOutputAspectRatio = 4f / 3f // Common fallback for camera preview
+            cameraOutputAspectRatio = 4f / 3f
         }
 
         currentScanFrame = repository.getFrameDimensions(
@@ -344,13 +332,12 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Crop captured image to scan frame bounds
     private fun cropImageToFrame(
         originalUri: Uri,
-        scanFrame: RectF, // This RectF is now relative to the visible camera feed, calculated by ScanRepository
+        scanFrame: RectF,
         artworkId: String,
-        previewViewWidth: Float, // The width of the PreviewView (the actual view's pixel width)
-        previewViewHeight: Float, // The height of the PreviewView (the actual view's pixel height)
+        previewViewWidth: Float,
+        previewViewHeight: Float,
         callback: (Uri) -> Unit
     ) {
         cameraExecutor.execute {
@@ -364,30 +351,12 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     val rotationDegrees = getExifOrientation(getApplication(), originalUri)
                     val orientedBitmap = rotateBitmap(originalBitmap, rotationDegrees)
 
-                    // Calculate the actual display rectangle of the camera feed within the PreviewView.
-                    // This is still needed here to map the `scanFrame` (which is in preview coords)
-                    // to the `orientedBitmap` (which is the full captured image).
                     val displayRect = repository.calculateCameraDisplayRect(
                         previewViewWidth,
                         previewViewHeight,
-                        orientedBitmap.width.toFloat() / orientedBitmap.height.toFloat(), // Use captured image aspect ratio
+                        orientedBitmap.width.toFloat() / orientedBitmap.height.toFloat(),
                         previewViewScaleType
                     )
-
-                    Log.d(TAG, "--- Cropping Debug Info (Camera) ---")
-                    Log.d(TAG, "1. Original Captured Bitmap (after EXIF rotation): ${orientedBitmap.width}x${orientedBitmap.height}")
-                    Log.d(TAG, "2. Preview View Actual Dimensions: ${previewViewWidth}x${previewViewHeight}")
-                    Log.d(TAG, "3. Scan Frame (from Repo, relative to visible feed): L:${scanFrame.left}, T:${scanFrame.top}, R:${scanFrame.right}, B:${scanFrame.bottom}")
-                    Log.d(TAG, "   Scan Frame Width: ${scanFrame.width()}, Height: ${scanFrame.height()}")
-                    Log.d(TAG, "4. Calculated Camera Display Rect (within Preview View): L:${displayRect.left}, T:${displayRect.top}, R:${displayRect.right}, B:${displayRect.bottom}")
-                    Log.d(TAG, "   Display Rect Width: ${displayRect.width()}, Height: ${displayRect.height()}")
-
-
-                    // Map the scanFrame (which is relative to the `displayRect`'s origin in PreviewView coords)
-                    // to the full `orientedBitmap` pixel space.
-                    // The `scanFrame.left/top` are already offsets from the PreviewView's (0,0) and represent the
-                    // top-left of the desired frame *within the visible camera feed*.
-                    // So we effectively translate it to be relative to displayRect's top-left, then scale.
 
                     val cropX = ((scanFrame.left - displayRect.left) * (orientedBitmap.width / displayRect.width())).toInt().coerceAtLeast(0)
                     val cropY = ((scanFrame.top - displayRect.top) * (orientedBitmap.height / displayRect.height())).toInt().coerceAtLeast(0)
@@ -395,14 +364,10 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     val finalCropWidth = (scanFrame.width() * (orientedBitmap.width / displayRect.width())).toInt().coerceAtLeast(1)
                     val finalCropHeight = (scanFrame.height() * (orientedBitmap.height / displayRect.height())).toInt().coerceAtLeast(1)
 
-                    // Ensure crop coordinates and dimensions do not exceed bitmap bounds
                     val actualCropX = cropX.coerceIn(0, orientedBitmap.width - finalCropWidth)
                     val actualCropY = cropY.coerceIn(0, orientedBitmap.height - finalCropHeight)
                     val actualFinalCropWidth = finalCropWidth.coerceAtMost(orientedBitmap.width - actualCropX)
                     val actualFinalCropHeight = finalCropHeight.coerceAtMost(orientedBitmap.height - actualCropY)
-
-
-                    Log.d(TAG, "5. Calculated Crop Area (in Bitmap Pixels): X=${actualCropX}, Y=${actualCropY}, Width=${actualFinalCropWidth}, Height=${actualFinalCropHeight}")
 
                     val croppedBitmap = try {
                         Bitmap.createBitmap(
@@ -413,16 +378,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                             actualFinalCropHeight
                         )
                     } catch (e: IllegalArgumentException) {
-                        Log.e(TAG, "Bitmap.createBitmap failed with IllegalArgumentException: ${e.message}. Using whole oriented bitmap. Crop params: X=$actualCropX, Y=$actualCropY, W=$actualFinalCropWidth, H=$actualFinalCropHeight, Bitmap: ${orientedBitmap.width}x${orientedBitmap.height}")
-                        orientedBitmap // Fallback to full image if arguments are invalid
+                        orientedBitmap
                     }
 
-
                     val croppedUri = saveCroppedImage(croppedBitmap, artworkId)
-                    Log.d(TAG, "6. Saved Cropped Image URI: $croppedUri")
-                    Log.d(TAG, "---------------------------------")
 
-                    // Proper recycling of bitmaps to prevent memory leaks
                     if (croppedBitmap !== orientedBitmap && orientedBitmap !== originalBitmap) {
                         originalBitmap.recycle()
                         orientedBitmap.recycle()
@@ -438,20 +398,18 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     Log.e(TAG, "Failed to decode original bitmap for cropping. Original URI: $originalUri")
                     ContextCompat.getMainExecutor(getApplication()).execute {
-                        callback(originalUri) // Fallback to original if decoding fails
+                        callback(originalUri)
                     }
                 }
             } catch (exception: Exception) {
                 Log.e(TAG, "CRITICAL ERROR: Image cropping or rotation failed entirely for $originalUri: ${exception.message}", exception)
                 ContextCompat.getMainExecutor(getApplication()).execute {
-                    callback(originalUri) // Fallback to original on error
+                    callback(originalUri)
                 }
             }
         }
     }
 
-    // This method is for gallery images, where we don't have a live preview frame.
-    // It will calculate a default frame based on the bitmap's own dimensions.
     private fun cropGalleryImageToFrame(
         originalUri: Uri,
         artworkId: String,
@@ -468,10 +426,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                     val rotationDegrees = getExifOrientation(getApplication(), originalUri)
                     val orientedBitmap = rotateBitmap(originalBitmap, rotationDegrees)
 
-                    // For gallery images, we apply a default frame relative to the bitmap's own dimensions.
-                    // You might want to adjust these percentages for gallery images.
                     val frameWidth = orientedBitmap.width * 0.75f
-                    val frameHeight = frameWidth * 1.2f // Maintain 1:1.2 aspect ratio
+                    val frameHeight = frameWidth * 1.2f
 
                     val left = (orientedBitmap.width - frameWidth) / 2f
                     val top = (orientedBitmap.height - frameHeight) / 2f
@@ -480,10 +436,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
                     val defaultFrameInBitmapCoords = RectF(left, top, right, bottom)
 
-                    Log.d(TAG, "--- Cropping Debug Info (Gallery) ---")
-                    Log.d(TAG, "1. Gallery Bitmap dimensions (after EXIF rotation): ${orientedBitmap.width}x${orientedBitmap.height}")
-                    Log.d(TAG, "2. Default Frame (calculated for bitmap coords): L:${defaultFrameInBitmapCoords.left}, T:${defaultFrameInBitmapCoords.top}, R:${defaultFrameInBitmapCoords.right}, B:${defaultFrameInBitmapCoords.bottom}")
-
                     val cropX = defaultFrameInBitmapCoords.left.toInt().coerceAtLeast(0)
                     val cropY = defaultFrameInBitmapCoords.top.toInt().coerceAtLeast(0)
                     val calculatedCropWidth = defaultFrameInBitmapCoords.width().toInt()
@@ -491,8 +443,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
                     val finalCropWidth = calculatedCropWidth.coerceAtMost(orientedBitmap.width - cropX).coerceAtLeast(1)
                     val finalCropHeight = calculatedCropHeight.coerceAtMost(orientedBitmap.height - cropY).coerceAtLeast(1)
-
-                    Log.d(TAG, "3. Calculated Gallery Crop Area (in Bitmap Pixels): X=${cropX}, Y=${cropY}, Width=${finalCropWidth}, Height=${finalCropHeight}")
 
                     val croppedBitmap = try {
                         Bitmap.createBitmap(
@@ -504,14 +454,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     } catch (e: IllegalArgumentException) {
                         Log.e(TAG, "Bitmap.createBitmap failed for gallery image: ${e.message}. Using whole oriented bitmap. Crop params: X=$cropX, Y=$cropY, W=$finalCropWidth, H=$finalCropHeight, Bitmap: ${orientedBitmap.width}x${orientedBitmap.height}")
-                        orientedBitmap // Fallback
+                        orientedBitmap
                     }
 
                     val croppedUri = saveCroppedImage(croppedBitmap, artworkId)
-                    Log.d(TAG, "4. Saved Cropped Image URI: $croppedUri")
-                    Log.d(TAG, "---------------------------------")
 
-                    // Proper recycling of bitmaps
                     if (croppedBitmap !== orientedBitmap && orientedBitmap !== originalBitmap) {
                         originalBitmap.recycle()
                         orientedBitmap.recycle()

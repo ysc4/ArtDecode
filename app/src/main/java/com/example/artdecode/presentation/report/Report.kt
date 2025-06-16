@@ -6,9 +6,8 @@ package com.example.artdecode.presentation.report
 data class Report(
     val reportID: String = "",
     val reportInput: String = "",
-    val status: String = "pending", // pending, reviewed, resolved
+    val status: String = "pending",
     val timestamp: Long = System.currentTimeMillis()
 ) {
-    // No-argument constructor for Firebase
     constructor() : this("", "", "pending", 0L)
 }

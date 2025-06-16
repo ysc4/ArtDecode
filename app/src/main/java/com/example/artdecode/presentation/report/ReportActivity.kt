@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.artdecode.R
-import com.example.artdecode.ReportViewModel
 import com.example.artdecode.presentation.artworkinfo.ArtworkInfoActivity
 import com.google.android.material.snackbar.Snackbar // Import Snackbar
 
@@ -20,7 +19,6 @@ class ReportActivity : AppCompatActivity() {
 
     private val viewModel: ReportViewModel by viewModels()
 
-    // Variables to hold the artwork data passed from ArtworkInfoActivity
     private var artworkId: String? = null
     private var capturedImageUri: String? = null
     private var artStyle: String? = null
@@ -33,7 +31,7 @@ class ReportActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_report)
 
-        rootView = findViewById(R.id.main) // Ensure R.id.main is the root layout of your activity_report.xml
+        rootView = findViewById(R.id.main)
 
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -41,7 +39,6 @@ class ReportActivity : AppCompatActivity() {
             insets
         }
 
-        // Retrieve artwork data from the Intent
         artworkId = intent.getStringExtra("ARTWORK_ID")
         capturedImageUri = intent.getStringExtra("CAPTURED_IMAGE_URI")
         artStyle = intent.getStringExtra("ART_STYLE")
@@ -53,24 +50,21 @@ class ReportActivity : AppCompatActivity() {
         val reportInput: EditText = findViewById(R.id.reportInput)
 
         backButton.setOnClickListener {
-            // Pass the retrieved artwork data to the ViewModel when back is clicked
             viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
         }
 
         submitButton.setOnClickListener {
             val reportText = reportInput.text.toString().trim()
 
-            // --- ADDED: Snackbar for report length validation ---
             if (reportText.isEmpty()) {
                 Snackbar.make(rootView, "Please enter a report description", Snackbar.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (reportText.length < 10) { // Check for minimum length
+            if (reportText.length < 10) {
                 Snackbar.make(rootView, "Report must be at least 10 characters long", Snackbar.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
-            // Disable submit button to prevent multiple submissions
             submitButton.isEnabled = false
             viewModel.onSubmitClicked(reportText)
         }
@@ -82,7 +76,7 @@ class ReportActivity : AppCompatActivity() {
         viewModel.navigateToArtworkInfo.observe(this) { event ->
             event.getContentIfNotHandled()?.let { artworkInfoBundle ->
                 val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
-                    putExtras(artworkInfoBundle) // Put the Bundle back into the Intent
+                    putExtras(artworkInfoBundle)
                 }
                 startActivity(intent)
                 finish()
@@ -95,7 +89,6 @@ class ReportActivity : AppCompatActivity() {
                     .addCallback(object : Snackbar.Callback() {
                         override fun onDismissed(transientBottomBar: Snackbar, event: Int) {
                             super.onDismissed(transientBottomBar, event)
-                            // Navigate back to ArtworkInfoActivity after Snackbar dismisses
                             viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
                         }
                     })
@@ -105,8 +98,8 @@ class ReportActivity : AppCompatActivity() {
 
         viewModel.showError.observe(this) { event ->
             event.getContentIfNotHandled()?.let { errorMessage ->
-                findViewById<Button>(R.id.submitButton).isEnabled = true // Re-enable submit button on error
-                Snackbar.make(rootView, "Error: $errorMessage", Snackbar.LENGTH_LONG).show() // Use Snackbar for errors too
+                findViewById<Button>(R.id.submitButton).isEnabled = true
+                Snackbar.make(rootView, "Error: $errorMessage", Snackbar.LENGTH_LONG).show()
             }
         }
 

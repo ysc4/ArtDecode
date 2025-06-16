@@ -12,9 +12,5 @@ interface ArtworkRepository {
     fun updateArtworkInFlow(artwork: Artwork)
     fun setCurrentUserId(userId: String?)
 
-    // REMOVED: Methods for Favorite Status
-    fun getArtworkFlowById(artworkId: String): Flow<Artwork?> // No longer strictly needed for a 'favorite' flow, but still useful for general live artwork data
-    // suspend fun toggleFavorite(artworkId: String)
-    // suspend fun getFavoriteState(artworkId: String): Boolean
-    // suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean)
+    fun getArtworkFlowById(artworkId: String): Flow<Artwork?>
 }

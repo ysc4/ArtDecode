@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    tools:context=".ArtworkInfo">
+    tools:context=".presentation.artworkinfo.ArtworkInfoActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/navigationBar"
@@ -67,7 +67,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Replaced artworkHighlightContainer with the new CardView -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/artworkHighlightContainer"
                 android:layout_width="match_parent"

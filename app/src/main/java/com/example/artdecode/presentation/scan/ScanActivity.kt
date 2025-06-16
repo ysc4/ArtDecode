@@ -35,12 +35,10 @@ class ScanActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var scanOverlay: ScanFrameOverlay
 
-    // User information
     private var userEmail: String? = null
     private var userUsername: String? = null
     private var userUid: String? = null
 
-    // Activity result launchers
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -61,11 +59,9 @@ class ScanActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_scan)
 
-        // Setup fullscreen
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         supportActionBar?.hide()
 
-        // Extract user information from intent
         extractUserInfoFromIntent()
 
         initializeViews()
@@ -79,7 +75,6 @@ class ScanActivity : AppCompatActivity() {
         userUsername = intent.getStringExtra(EXTRA_USER_USERNAME)
         userUid = intent.getStringExtra(EXTRA_USER_UID)
 
-        // Pass user ID to ViewModel
         userUid?.let { uid ->
             viewModel.setCurrentUserId(uid)
         }
@@ -91,7 +86,6 @@ class ScanActivity : AppCompatActivity() {
         previewView = findViewById(R.id.previewView)
         scanOverlay = findViewById(R.id.scanFrameOverlay)
 
-        // Update scan frame when overlay is laid out
         scanOverlay.viewTreeObserver.addOnGlobalLayoutListener {
             viewModel.updateScanFrame(
                 scanOverlay.width.toFloat(),
@@ -106,7 +100,6 @@ class ScanActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.galleryButton).setOnClickListener {
-            // Check if gallery is enabled before allowing gallery access
             if (viewModel.isGalleryEnabled()) {
                 viewModel.onGalleryClicked()
             } else {
@@ -120,34 +113,28 @@ class ScanActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-        // Observe scan state
         viewModel.scanState.observe(this) { state ->
             updateUI(state)
         }
 
-        // Handle navigation events - Now passing the full Artwork object
         viewModel.navigateToArtworkInfo.observe(this) { event ->
             event.getContentIfNotHandled()?.let { artwork ->
                 navigateToArtworkInfo(artwork)
             }
         }
 
-        // Handle messages
         viewModel.showMessage.observe(this, Event.EventObserver { message ->
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         })
 
-        // Handle activity finish
         viewModel.finishActivity.observe(this, Event.EventObserver {
             finish()
         })
 
-        // Handle permission requests
         viewModel.requestCameraPermission.observe(this, Event.EventObserver {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         })
 
-        // Handle gallery opening
         viewModel.openGallery.observe(this, Event.EventObserver {
             pickImageLauncher.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -171,7 +158,6 @@ class ScanActivity : AppCompatActivity() {
             }
         }
 
-        // Update scan overlay if frame bounds are available
         state.scanFrame?.let { frame ->
             scanOverlay.updateFrame(frame)
         }
@@ -203,17 +189,14 @@ class ScanActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    // Updated to accept the complete Artwork object
     private fun navigateToArtworkInfo(artwork: Artwork) {
         val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
-            // Pass all relevant data as extras.
             putExtra("ARTWORK_ID", artwork.id)
             putExtra("CAPTURED_IMAGE_URI", artwork.imageUri)
             putExtra("ART_STYLE", artwork.artStyle)
             putExtra("CONFIDENCE_SCORE", artwork.confidenceScore ?: 0f)
             putExtra("USER_ID", artwork.userId) // Pass user ID
 
-            // Also pass original user info if needed
             putExtra(EXTRA_USER_EMAIL, userEmail)
             putExtra(EXTRA_USER_USERNAME, userUsername)
             putExtra(EXTRA_USER_UID, userUid)

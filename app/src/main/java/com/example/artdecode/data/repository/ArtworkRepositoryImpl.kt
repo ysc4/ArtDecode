@@ -73,7 +73,6 @@ class ArtworkRepositoryImpl(
         }
     }
 
-    // Kept this as it's used by ArtworkInfoViewModel for general artwork observation
     override fun getArtworkFlowById(artworkId: String): Flow<Artwork?> {
         return _allArtworksFlow.map { artworks ->
             artworks.find { it.id == artworkId }
@@ -90,26 +89,23 @@ class ArtworkRepositoryImpl(
         }
     }
 
-    // In ArtworkRepositoryImpl.kt
     override suspend fun saveArtwork(artwork: Artwork): Artwork {
         return suspendCoroutine { continuation ->
             val artworkRef: DatabaseReference
             val finalArtwork: Artwork
 
             if (artwork.id == null) {
-                // New artwork: push to generate a unique key
                 artworkRef = databaseRef.push()
-                val newId = artworkRef.key ?: UUID.randomUUID().toString() // Fallback if key is null
-                finalArtwork = artwork.copy(id = newId) // CRITICAL: Assign the Firebase-generated key to the 'id' field
+                val newId = artworkRef.key ?: UUID.randomUUID().toString()
+                finalArtwork = artwork.copy(id = newId)
                 Log.d("ArtworkRepo", "Saving NEW artwork with generated ID: $newId")
             } else {
-                // Existing artwork: use its ID
                 artworkRef = databaseRef.child(artwork.id)
-                finalArtwork = artwork // Artwork object already has its ID
+                finalArtwork = artwork
                 Log.d("ArtworkRepo", "Saving EXISTING artwork with ID: ${artwork.id}")
             }
 
-            artworkRef.setValue(finalArtwork) // Save the Artwork object (which now correctly includes the ID)
+            artworkRef.setValue(finalArtwork)
                 .addOnSuccessListener {
                     Log.d("ArtworkRepo", "Artwork saved successfully: ${finalArtwork.id}")
                     continuation.resume(finalArtwork)
@@ -125,7 +121,6 @@ class ArtworkRepositoryImpl(
         try {
             databaseRef.child(artworkId).removeValue().await()
             Log.d("ArtworkRepository", "Artwork deleted from Firebase: $artworkId")
-            // Local flow update for immediate UI response. The Firebase listener will reconcile.
             _allArtworksFlow.value = _allArtworksFlow.value.filter { it.id != artworkId }
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error deleting artwork $artworkId: ${e.message}")

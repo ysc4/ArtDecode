@@ -9,7 +9,6 @@ class TermsViewModel : ViewModel() {
     private val _navigateBack = MutableLiveData<Boolean>()
     val navigateBack: LiveData<Boolean> = _navigateBack
 
-    // Since content is in XML, we only need navigation logic
     fun onBackButtonClicked() {
         _navigateBack.value = true
     }

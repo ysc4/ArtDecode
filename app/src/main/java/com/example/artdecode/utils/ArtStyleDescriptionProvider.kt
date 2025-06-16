@@ -1,6 +1,6 @@
 package com.example.artdecode.utils
 
-import com.example.artdecode.R // Make sure this import is correct for your project's R file
+import com.example.artdecode.R
 
 object ArtStyleDescriptionProvider {
 
@@ -26,11 +26,6 @@ object ArtStyleDescriptionProvider {
         }
     }
 
-    /**
-     * Returns the drawable resource ID for a given art style.
-     * Ensure you have corresponding images in `res/drawable/` with names
-     * like `art_nouveau_modern.jpg`, `baroque.jpg`, etc.
-     */
     fun getStyleImageResId(artStyle: String?): Int {
         return when (artStyle) {
             "Art Nouveau Modern" -> R.drawable.art_nouveau_modern
@@ -49,7 +44,7 @@ object ArtStyleDescriptionProvider {
             "Romanticism" -> R.drawable.romanticism
             "Symbolism" -> R.drawable.symbolism
             "Ukiyo-e" -> R.drawable.ukiyo_e
-            else -> R.drawable.default_art_style_image // IMPORTANT: Create this drawable!
+            else -> R.drawable.default_art_style_image
         }
     }
 }

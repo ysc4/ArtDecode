@@ -21,7 +21,6 @@ class SignUpViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val database = FirebaseDatabase.getInstance()
 
-    // UI State flows
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -46,7 +45,6 @@ class SignUpViewModel : ViewModel() {
     private val _toastMessage = MutableStateFlow<Event<String>?>(null)
     val toastMessage: StateFlow<Event<String>?> = _toastMessage.asStateFlow()
 
-    // Data class for user information
     data class UserData(
         val email: String = "",
         val username: String = "",
@@ -58,8 +56,8 @@ class SignUpViewModel : ViewModel() {
         username: String,
         password: String,
         confirmPassword: String,
-        agreedToPrivacyPolicy: Boolean, // New parameter
-        agreedToTerms: Boolean // Existing parameter
+        agreedToPrivacyPolicy: Boolean,
+        agreedToTerms: Boolean
     ) {
         if (!validateInputs(email, username, password, confirmPassword, agreedToPrivacyPolicy, agreedToTerms)) return
 
@@ -68,12 +66,10 @@ class SignUpViewModel : ViewModel() {
             _errorMessage.value = null
 
             try {
-                // Create user with email and password
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user
 
                 if (user != null) {
-                    // Update Firebase Auth profile
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setDisplayName(username)
                         .build()
@@ -84,7 +80,6 @@ class SignUpViewModel : ViewModel() {
                         _toastMessage.value = Event("Account created, but failed to set username.")
                     }
 
-                    // Store user data in Realtime Database
                     val userData = UserData(
                         email = email,
                         username = username,
@@ -118,7 +113,6 @@ class SignUpViewModel : ViewModel() {
         }
     }
 
-    // Function to read user data from database (for future use)
     suspend fun getUserData(userId: String): UserData? {
         return try {
             val snapshot = database.reference
@@ -133,7 +127,6 @@ class SignUpViewModel : ViewModel() {
         }
     }
 
-    // Function to get current user data
     suspend fun getCurrentUserData(): UserData? {
         val currentUser = auth.currentUser
         return if (currentUser != null) {
@@ -143,7 +136,6 @@ class SignUpViewModel : ViewModel() {
         }
     }
 
-    // Modified validateInputs to include both checkbox checks
     private fun validateInputs(
         email: String,
         username: String,
@@ -155,7 +147,6 @@ class SignUpViewModel : ViewModel() {
         clearErrors()
         var hasError = false
 
-        // Basic input validation
         when {
             email.isBlank() -> { _emailError.value = "Email is required"; hasError = true }
             !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> { _emailError.value = "Please enter a valid email"; hasError = true }
@@ -176,14 +167,11 @@ class SignUpViewModel : ViewModel() {
             password != confirmPassword -> { _confirmPasswordError.value = "Passwords do not match"; hasError = true }
         }
 
-        // New validation for privacy policy - IMPORTANT: order matters for toast messages
         if (!agreedToPrivacyPolicy) {
             _toastMessage.value = Event("You must agree to the Privacy Policy.")
             hasError = true
         }
 
-        // Validation for terms and conditions
-        // This will overwrite the previous toast if both are not checked, showing the last one.
         if (!agreedToTerms) {
             _toastMessage.value = Event("You must agree to the Terms and Conditions.")
             hasError = true
@@ -192,14 +180,12 @@ class SignUpViewModel : ViewModel() {
         return !hasError
     }
 
-    // Modified clearErrors to ensure all errors are cleared
     private fun clearErrors() {
         _emailError.value = null
         _usernameError.value = null
         _passwordError.value = null
         _confirmPasswordError.value = null
         _errorMessage.value = null
-        // _toastMessage is an Event, it clears after consumption, no need to clear here.
     }
 
     private fun getErrorMessage(exception: Throwable): String {
@@ -216,7 +202,7 @@ class SignUpViewModel : ViewModel() {
     }
 
     fun clearMessages() {
-        _toastMessage.value = null // This should be reset when the activity is destroyed or new operation starts
+        _toastMessage.value = null
         _navigateToLogin.value = null
     }
 }

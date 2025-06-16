@@ -9,12 +9,12 @@ import com.example.artdecode.data.model.Artwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map // Keep map if you're mapping to RecyclerViewItem
-import kotlinx.coroutines.flow.collectLatest // Use collectLatest to cancel previous collections if new data comes in quickly
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val artworkRepository: ArtworkRepository // Made private val as it's not exposed
+    private val artworkRepository: ArtworkRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -29,7 +29,6 @@ class HomeViewModel(
             try {
                 artworkRepository.saveArtwork(artwork)
                 Log.d("HomeViewModel", "Successfully restored artwork: ${artwork.id}")
-                // The repository's flow will update automatically, refreshing the UI
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error restoring artwork: ${e.message}")
             }
@@ -37,11 +36,8 @@ class HomeViewModel(
     }
     private fun collectArtworksFromRepository() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true) // Show loading on initial collection
+            _uiState.value = _uiState.value.copy(isLoading = true)
 
-            // Collect directly from the repository's getArtworks() flow.
-            // This flow is already designed to combine with the repository's _currentUserId
-            // and filter the results.
             artworkRepository.getArtworks()
                 .map { artworks ->
                     Log.d("HomeViewModel", "Received ${artworks.size} artworks from repository (already filtered by user).")
@@ -57,7 +53,7 @@ class HomeViewModel(
                     }
                     items
                 }
-                .collectLatest { items -> // Use collectLatest to cancel previous collections if repository re-emits quickly
+                .collectLatest { items ->
                     _uiState.value = _uiState.value.copy(
                         items = items,
                         isLoading = false
@@ -75,13 +71,8 @@ class HomeViewModel(
         viewModelScope.launch {
             artworkId?.let { id ->
                 try {
-                    // Make sure the artworkRepository's _currentUserId is set before this is called
-                    // (which it should be if you're using the singleton correctly).
                     artworkRepository.deleteArtwork(id)
                     Log.d("HomeViewModel", "Successfully sent request to delete artwork: $id")
-                    // The repository's listener will update _allArtworksFlow,
-                    // which in turn will cause getArtworks() to re-emit,
-                    // and this ViewModel's collectLatest will update the UI.
                 } catch (e: Exception) {
                     Log.e("HomeViewModel", "Error deleting artwork: ${e.message}")
                 }

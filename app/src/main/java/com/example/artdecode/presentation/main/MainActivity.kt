@@ -17,7 +17,6 @@ import com.example.artdecode.presentation.settings.SettingsFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.FirebaseApp
 
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MainViewModel
@@ -25,7 +24,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var homeFragment: HomeFragment
     private lateinit var settingsFragment: SettingsFragment
 
-    // User information from login
     private var userEmail: String? = null
     private var userUsername: String? = null
     private var userUid: String? = null
@@ -69,7 +67,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         bottomNav = findViewById(R.id.bottomNavigationView)
-        // Create HomeFragment with user information
         homeFragment = HomeFragment.newInstance(userEmail, userUsername, userUid)
         settingsFragment = SettingsFragment()
     }
@@ -103,7 +100,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.navScan -> {
                     viewModel.navigateToScanActivity()
-                    false // Don't change the selected tab since we're going to another activity
+                    false
                 }
                 R.id.navSettings -> {
                     viewModel.showSettingsFragment()

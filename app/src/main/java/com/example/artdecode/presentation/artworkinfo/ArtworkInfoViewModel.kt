@@ -5,20 +5,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.artdecode.data.model.Artwork
 import com.example.artdecode.data.repository.ArtworkRepository
-import com.example.artdecode.utils.Event // Make sure this is correctly pointing to your Event class
-
+import com.example.artdecode.utils.Event
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.take // <-- This might be new and missing
-import kotlinx.coroutines.flow.single // <-- This might be new and missing
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.TimeoutCancellationException // <-- This might be new and missing
-import kotlinx.coroutines.withTimeout // <-- This might be new and missing
-// import kotlinx.coroutines.withTimeoutOrNull // This one is no longer used, so it can be removed
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
+
 class ArtworkInfoViewModel(
     private val artworkRepository: ArtworkRepository
 ) : ViewModel() {
@@ -33,11 +32,9 @@ class ArtworkInfoViewModel(
 
     private var currentViewModelUserId: String? = null
 
-    // Flag to track if similar artworks have already been loaded for the current session
     private var similarArtworksLoadedForCurrentSession: Boolean = false
 
-    // Timeout duration for loading an existing artwork
-    private val ARTWORK_LOAD_TIMEOUT_MS = 5000L // 5 seconds
+    private val ARTWORK_LOAD_TIMEOUT_MS = 5000L
 
     fun setCurrentUserId(userId: String) {
         currentViewModelUserId = userId
@@ -51,14 +48,13 @@ class ArtworkInfoViewModel(
         artStyle: String?,
         confidenceScore: Float?
     ) {
-        // Reset state for a fresh load
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorMessage = null,
-            artwork = null, // Ensure artwork is null initially for a fresh load
-            similarArtworks = emptyList() // Clear similar artworks initially
+            artwork = null,
+            similarArtworks = emptyList()
         )
-        similarArtworksLoadedForCurrentSession = false // Reset for each new loadArtworkInfo call
+        similarArtworksLoadedForCurrentSession = false
 
         currentArtworkId = artworkId
         this.capturedImageUri = capturedImageUri
@@ -67,32 +63,26 @@ class ArtworkInfoViewModel(
 
         viewModelScope.launch {
             if (artworkId != null) {
-                // PATH FOR EXISTING ARTWORKS (from HomeFragment)
                 Log.d("ArtworkInfoVM", "Attempting to load info for EXISTING artwork with ID: $artworkId")
 
                 try {
-                    // Collect the first non-null artwork within a timeout
-                    // This uses `withTimeout` which throws TimeoutCancellationException if timeout occurs.
                     val fetchedArtwork = withTimeout(ARTWORK_LOAD_TIMEOUT_MS) {
                         artworkRepository.getArtworkFlowById(artworkId)
-                            .filterNotNull() // Only process non-null artwork emissions
+                            .filterNotNull()
                             .onEach {
                                 Log.d("ArtworkInfoVM", "--- FETCHED EXISTING ARTWORK FLOW EMISSION (NON-NULL) ---")
                                 Log.d("ArtworkInfoVM", "Fetched artwork for ID '$artworkId': $it")
                             }
-                            .take(1) // Take only the first non-null item and then cancel the upstream flow
-                            .single() // Converts a Flow of 1 item into that item. Will throw if flow is empty.
+                            .take(1)
+                            .single()
                     }
 
-                    // If we reach here, fetchedArtwork is guaranteed to be non-null (because of filterNotNull and single)
-                    // and loaded within the timeout.
                     _uiState.value = _uiState.value.copy(
                         artwork = fetchedArtwork,
                         isLoading = false,
-                        errorMessage = null // Clear any error once artwork is found
+                        errorMessage = null
                     )
 
-                    // Only fetch similar artworks once for this session of loadArtworkInfo
                     if (!similarArtworksLoadedForCurrentSession) {
                         fetchedArtwork.artStyle?.let { styleFromDb ->
                             Log.d("ArtworkInfoVM", "Fetching similar artworks for existing artwork. Style from DB: '$styleFromDb', Exclude ID: $artworkId")
@@ -102,14 +92,13 @@ class ArtworkInfoViewModel(
                                     _uiState.value = _uiState.value.copy(
                                         similarArtworks = similarArtworksList
                                     )
-                                    similarArtworksLoadedForCurrentSession = true // Mark as loaded
+                                    similarArtworksLoadedForCurrentSession = true
                                 }
-                                .launchIn(viewModelScope) // Launch similar artwork collection
+                                .launchIn(viewModelScope)
                         } ?: run {
                             Log.w("ArtworkInfoVM", "Existing artwork ID: $artworkId has NULL or empty 'artStyle' field in database. Cannot fetch similar artworks.")
                             _uiState.value = _uiState.value.copy(
                                 similarArtworks = emptyList()
-                                // errorMessage is already null from initial state, or could be set for "no style"
                             )
                             similarArtworksLoadedForCurrentSession = true
                         }
@@ -118,17 +107,14 @@ class ArtworkInfoViewModel(
                     }
 
                 } catch (e: TimeoutCancellationException) {
-                    // This catch block handles the timeout explicitly
                     Log.e("ArtworkInfoVM", "Artwork with ID: $artworkId not found within ${ARTWORK_LOAD_TIMEOUT_MS}ms (TimeoutCancellationException).", e)
                     _uiState.value = _uiState.value.copy(
                         artwork = null,
                         similarArtworks = emptyList(),
                         isLoading = false,
-                        errorMessage = Event("Artwork not found within timeout.") // Re-added for definitive 'not found'
+                        errorMessage = Event("Artwork not found within timeout.")
                     )
                 } catch (e: NoSuchElementException) {
-                    // This catch block handles if filterNotNull().take(1).single() finds no elements AND no timeout
-                    // This is less likely with Room flows that continuously emit, but good for completeness.
                     Log.e("ArtworkInfoVM", "Artwork with ID: $artworkId not found (NoSuchElementException - flow completed without emitting non-null).", e)
                     _uiState.value = _uiState.value.copy(
                         artwork = null,
@@ -138,7 +124,6 @@ class ArtworkInfoViewModel(
                     )
                 }
                 catch (e: Exception) {
-                    // Catch any other general exceptions during loading an existing artwork
                     Log.e("ArtworkInfoVM", "Error loading artwork with ID $artworkId: ${e.message}", e)
                     _uiState.value = _uiState.value.copy(
                         artwork = null,
@@ -149,23 +134,20 @@ class ArtworkInfoViewModel(
                 }
 
             } else {
-                // PATH FOR NEWLY SCANNED ARTWORKS (This path is confirmed working as it doesn't wait for DB)
                 Log.d("ArtworkInfoVM", "Loading info for NEWLY SCANNED artwork.")
                 val tempArtwork = Artwork(
-                    id = null, // Will be generated when saved to DB
+                    id = null,
                     imageUri = capturedImageUri,
                     artStyle = artStyle,
                     confidenceScore = confidenceScore,
                     userId = currentViewModelUserId,
-                    // No capturedAt, will be set when saved
-                    // No dbId, will be set when saved
                 )
                 Log.d("ArtworkInfoVM", "Created temp artwork: Style: ${tempArtwork.artStyle}, UserID: ${tempArtwork.userId}")
 
                 _uiState.value = _uiState.value.copy(
-                    artwork = tempArtwork, // Set the temporary artwork immediately
+                    artwork = tempArtwork,
                     isLoading = false,
-                    errorMessage = null // Clear any error
+                    errorMessage = null
                 )
 
                 artStyle?.let { style ->
@@ -183,7 +165,6 @@ class ArtworkInfoViewModel(
                     Log.w("ArtworkInfoVM", "Newly scanned artwork has NULL or empty 'artStyle'. Cannot fetch similar artworks.")
                     _uiState.value = _uiState.value.copy(
                         similarArtworks = emptyList()
-                        // errorMessage is null from initial state
                     )
                 }
             }
@@ -203,7 +184,6 @@ class ArtworkInfoViewModel(
     }
 
     fun onSimilarArtworkClick(artworkId: String?) {
-        // When navigating to a similar artwork, ensure we pass the ID to loadArtworkInfo
         _uiState.value = _uiState.value.copy(navigateToSimilarArtwork = Event(artworkId))
     }
 
@@ -213,7 +193,7 @@ class ArtworkInfoViewModel(
             navigateToScan = null,
             navigateToReport = null,
             navigateToSimilarArtwork = null,
-            errorMessage = null // Clear any error message after it's handled by UI (e.g., toast shown)
+            errorMessage = null
         )
     }
 }

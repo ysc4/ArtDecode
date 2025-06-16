@@ -29,7 +29,6 @@ class HomeFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ArtworkAdapter
 
-    // User information
     private var userEmail: String? = null
     private var userUsername: String? = null
     private var userUid: String? = null
@@ -55,7 +54,6 @@ class HomeFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Extract user information from arguments
         arguments?.let {
             userEmail = it.getString(ARG_USER_EMAIL)
             userUsername = it.getString(ARG_USER_USERNAME)
@@ -84,21 +82,14 @@ class HomeFragment : Fragment() {
         val repository = application.artworkRepository // Get the singleton instance
 
         userUid?.let { uid ->
-            // This ensures the repository's internal _currentUserId Flow is updated.
-            // This is the ONLY place you need to explicitly set the user ID
-            // for the entire application's data layer state.
             repository.setCurrentUserId(uid)
             Log.d("HomeFragment", "Set UID $uid on singleton ArtworkRepository from HomeFragment.")
         } ?: run {
             Log.e("HomeFragment", "userUid is NULL in HomeFragment setupViewModel! Cannot set repository UID.")
-            // Consider redirecting to login or showing an error if userUid is critical and null here.
         }
 
-        // Pass applicationContext to the factory
         val factory = HomeViewModelFactory(requireContext().applicationContext)
         viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
-
-        // No need to call viewModel.setCurrentUserId(uid) anymore as it was removed from ViewModel
     }
 
     private fun setupRecyclerView(view: View) {
@@ -122,7 +113,6 @@ class HomeFragment : Fragment() {
         )
         recyclerView.adapter = adapter
 
-        // Add swipe-to-delete functionality
         setupSwipeToDelete()
     }
 
@@ -139,28 +129,22 @@ class HomeFragment : Fragment() {
         if (position < currentItems.size) {
             val item = currentItems[position]
 
-            // Only delete if it's an artwork item (not header or message)
             if (item is RecyclerViewItem.ArtworkItem) {
                 val artworkToDelete = item.artwork
                 val artworkId = artworkToDelete.id
 
-                // Show confirmation with Snackbar and undo option
                 val snackbar = Snackbar.make(
-                    recyclerView, // Use recyclerView as the anchor view for Snackbar
+                    recyclerView,
                     "Artwork deleted",
                     Snackbar.LENGTH_LONG
                 ).setAction("UNDO") {
-                    // Restore the artwork if user clicks undo
-                    // CALL THE VIEWMODEL'S PUBLIC METHOD
-                    viewModel.restoreArtwork(artworkToDelete) // <-- FIXED LINE
+                    viewModel.restoreArtwork(artworkToDelete)
                 }
 
-                // Delete the artwork (this triggers the initial delete, undo restores)
                 viewModel.deleteArtwork(artworkId)
 
                 snackbar.show()
             } else {
-                // If somehow a header/message was swiped, refresh the adapter
                 adapter.notifyItemChanged(position)
             }
         }
@@ -174,7 +158,6 @@ class HomeFragment : Fragment() {
                 uiState.navigateToArtworkDetail?.let { artworkId ->
                     val intent = Intent(requireContext(), ArtworkInfoActivity::class.java).apply {
                         putExtra("ARTWORK_ID", artworkId)
-                        // Pass user information to ArtworkInfoActivity as well
                         putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
                         putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
                         putExtra(LoginActivity.EXTRA_USER_UID, userUid)
@@ -186,7 +169,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // Inner class for swipe-to-delete callback
     private inner class SwipeToDeleteCallback(
         private val onSwipeDelete: (position: Int) -> Unit
     ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
@@ -206,9 +188,8 @@ class HomeFragment : Fragment() {
             recyclerView: RecyclerView,
             viewHolder: RecyclerView.ViewHolder
         ): Int {
-            // Don't allow swiping on header items
             return if (viewHolder.itemViewType == ArtworkAdapter.VIEW_TYPE_HEADER) {
-                0 // No swipe for headers
+                0
             } else {
                 super.getSwipeDirs(recyclerView, viewHolder)
             }

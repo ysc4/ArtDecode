@@ -9,9 +9,11 @@ import android.text.style.ClickableSpan
 import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.R
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -38,7 +40,7 @@ class SignUpActivity : AppCompatActivity() {
 
         setupWindowInsets()
         setupUIListeners()
-        setupCheckboxLinks() // NEW: Set up clickable links within checkboxes
+        setupCheckboxLinks()
         observeViewModel()
         handleBackPress()
     }
@@ -64,8 +66,8 @@ class SignUpActivity : AppCompatActivity() {
                     usernameInput.text.toString().trim(),
                     passwordInput.text.toString(),
                     repeatPassword.text.toString(),
-                    checkBoxPrivacy.isChecked, // Pass privacy policy checkbox state
-                    checkBoxTerms.isChecked // Pass terms and conditions checkbox state
+                    checkBoxPrivacy.isChecked,
+                    checkBoxTerms.isChecked
                 )
             }
 
@@ -76,19 +78,16 @@ class SignUpActivity : AppCompatActivity() {
     }
 
     private fun setupCheckboxLinks() {
-        // Privacy Policy CheckBox
         val privacyText = "I agree to the Privacy Policy"
         val privacyPolicySpannable = SpannableString(privacyText)
         val privacyPolicyClickableSpan = object : ClickableSpan() {
             override fun onClick(widget: View) {
-                // Navigate to Privacy Policy Activity
                 startActivity(Intent(this@SignUpActivity, PrivacyPolicyActivity::class.java))
             }
-            // Optional: Customize link appearance (e.g., remove underline)
             override fun updateDrawState(ds: android.text.TextPaint) {
                 super.updateDrawState(ds)
-                ds.isUnderlineText = true // Keep underline for clickable text
-                // ds.color = ContextCompat.getColor(this@SignUpActivity, R.color.blue) // Optional: highlight link in blue, define R.color.blue if needed
+                ds.isUnderlineText = true
+                ds.color = ContextCompat.getColor(this@SignUpActivity, com.example.artdecode.R.color.navy_blue)
             }
         }
         val privacyPolicyStart = privacyText.indexOf("Privacy Policy")
@@ -97,22 +96,19 @@ class SignUpActivity : AppCompatActivity() {
 
         binding.checkBoxPrivacy.apply {
             text = privacyPolicySpannable
-            movementMethod = LinkMovementMethod.getInstance() // Make links clickable
+            movementMethod = LinkMovementMethod.getInstance()
         }
 
-        // Terms and Conditions CheckBox
         val termsText = "I agree to the Terms and Conditions"
         val termsAndConditionsSpannable = SpannableString(termsText)
         val termsAndConditionsClickableSpan = object : ClickableSpan() {
             override fun onClick(widget: View) {
-                // Navigate to Terms and Conditions Activity
                 startActivity(Intent(this@SignUpActivity, TermsActivity::class.java))
             }
-            // Optional: Customize link appearance
             override fun updateDrawState(ds: android.text.TextPaint) {
                 super.updateDrawState(ds)
-                ds.isUnderlineText = true // Keep underline for clickable text
-                // ds.color = ContextCompat.getColor(this@SignUpActivity, R.color.blue) // Optional: highlight link in blue, define R.color.blue if needed
+                ds.isUnderlineText = true
+                ds.color = ContextCompat.getColor(this@SignUpActivity, com.example.artdecode.R.color.navy_blue)
             }
         }
         val termsStart = termsText.indexOf("Terms and Conditions")
@@ -121,7 +117,7 @@ class SignUpActivity : AppCompatActivity() {
 
         binding.checkBoxTerms.apply {
             text = termsAndConditionsSpannable
-            movementMethod = LinkMovementMethod.getInstance() // Make links clickable
+            movementMethod = LinkMovementMethod.getInstance()
         }
     }
 
@@ -129,7 +125,6 @@ class SignUpActivity : AppCompatActivity() {
         with(binding) {
             lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    // Loading state
                     launch {
                         viewModel.isLoading.collect { isLoading ->
                             loadingProgressBar.isVisible = isLoading
@@ -138,7 +133,6 @@ class SignUpActivity : AppCompatActivity() {
                         }
                     }
 
-                    // Field errors
                     launch {
                         viewModel.emailError.collect { error ->
                             emailInput.error = error
@@ -174,7 +168,6 @@ class SignUpActivity : AppCompatActivity() {
                         }
                     }
 
-                    // Global error
                     launch {
                         viewModel.errorMessage.collect { error ->
                             if (error != null) {
@@ -186,7 +179,6 @@ class SignUpActivity : AppCompatActivity() {
                         }
                     }
 
-                    // Navigation and Toast messages
                     launch {
                         viewModel.navigateToLogin.collect { event ->
                             event?.getContentIfNotHandled()?.let {
@@ -202,8 +194,6 @@ class SignUpActivity : AppCompatActivity() {
                             }
                         }
                     }
-
-                    // No longer observing specific terms/privacy error TextViews, handled by toastMessage
                 }
             }
         }

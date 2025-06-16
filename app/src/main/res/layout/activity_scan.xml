@@ -6,9 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
-    tools:context=".Scan">
+    tools:context=".presentation.scan.ScanActivity">
 
-    <!-- Camera Preview -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
@@ -22,7 +21,6 @@
         app:scaleType="fillCenter">
     </androidx.camera.view.PreviewView>
 
-    <!-- Close button -->
     <com.example.artdecode.ScanFrameOverlay
         android:id="@+id/scanFrameOverlay"
         android:layout_width="0dp"
@@ -46,7 +44,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@android:color/white" />
 
-    <!-- Instruction text -->
     <TextView
         android:id="@+id/textView6"
         android:layout_width="wrap_content"
@@ -61,9 +58,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Scanning frame overlay -->
-
-    <!-- Capture/Scan Button (Top circular button) -->
     <ImageView
         android:id="@+id/captureButton"
         android:layout_width="50dp"
@@ -77,7 +71,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Gallery/Album Button (Bottom circular button) -->
     <ImageView
         android:id="@+id/galleryButton"
         android:layout_width="50dp"

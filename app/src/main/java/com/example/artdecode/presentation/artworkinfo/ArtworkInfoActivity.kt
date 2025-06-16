@@ -29,9 +29,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     private lateinit var viewModel: ArtworkInfoViewModel
 
-    // UI elements
     private lateinit var artworkImageView: ImageView
-    // private lateinit var favoriteButton: ImageButton // REMOVED: Favorite button
     private lateinit var artworkStyleTextView: TextView
     private lateinit var confidenceScoreTextView: TextView
     private lateinit var similarArtworksContainer: LinearLayout
@@ -41,7 +39,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
     private lateinit var styleDescriptionTextView: TextView
     private lateinit var artStyleImageView: ImageView
 
-    // User information
     private var userEmail: String? = null
     private var userUsername: String? = null
     private var userUid: String? = null
@@ -53,7 +50,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
         supportActionBar?.hide()
 
-        // Extract user information from intent
         extractUserInfoFromIntent()
 
         setupViewModel()
@@ -86,7 +82,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
         val factory = ArtworkInfoViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[ArtworkInfoViewModel::class.java]
 
-        // Set the current user ID in the ViewModel to filter similar artworks
         userUid?.let { uid ->
             viewModel.setCurrentUserId(uid)
         }
@@ -94,7 +89,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         artworkImageView = findViewById<ImageView>(R.id.artworkImage)
-        // favoriteButton = findViewById<ImageButton>(R.id.favoriteButton) // REMOVED: Initialize favorite button
         artworkStyleTextView = findViewById<TextView>(R.id.artworkStyle)
         confidenceScoreTextView = findViewById<TextView>(R.id.confScore)
         similarArtworksContainer = findViewById<LinearLayout>(R.id.similarArtworksContainer)
@@ -109,10 +103,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
         backButton.setOnClickListener {
             viewModel.onBackClick()
         }
-        // REMOVED: Favorite button click listener
-        // favoriteButton.setOnClickListener {
-        //     viewModel.toggleFavorite()
-        // }
         scanMoreButton.setOnClickListener {
             viewModel.onScanMoreClick()
         }
@@ -128,8 +118,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 handleNavigation(uiState)
                 uiState.errorMessage?.getContentIfNotHandled()?.let { message ->
                     Toast.makeText(this@ArtworkInfoActivity, message, Toast.LENGTH_LONG).show()
-                    // Clear the error message after showing
-                    viewModel.onNavigationHandled() // This clears the error message flag
+                    viewModel.onNavigationHandled()
                 }
             }
         }
@@ -139,7 +128,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
         Log.d("ArtworkInfoActivity", "updateUI called. isLoading: ${uiState.isLoading}, artwork present: ${uiState.artwork != null}")
 
         uiState.artwork?.let { artwork ->
-            // Load the captured artwork image
             artwork.imageUri?.let { uriString ->
                 Glide.with(this)
                     .load(Uri.parse(uriString))
@@ -150,7 +138,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 artworkImageView.setImageResource(R.drawable.placeholder_image)
             }
 
-            // Set the predicted artwork style name and confidence
             artworkStyleTextView.text = artwork.artStyle ?: "N/A"
             confidenceScoreTextView.text = artwork.confidenceScore?.let {
                 String.format("%.2f%%", it * 100)
@@ -220,7 +207,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     private fun handleNavigation(uiState: ArtworkInfoUiState) {
         when {
-            uiState.navigateBack?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
+            uiState.navigateBack?.getContentIfNotHandled() != null -> {
                 val intent = Intent(this, MainActivity::class.java).apply {
                     putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
@@ -229,7 +216,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 startActivity(intent)
                 finish()
             }
-            uiState.navigateToScan?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
+            uiState.navigateToScan?.getContentIfNotHandled() != null -> {
                 val intent = Intent(this, ScanActivity::class.java).apply {
                     putExtra(ScanActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(ScanActivity.EXTRA_USER_USERNAME, userUsername)
@@ -238,7 +225,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
                 startActivity(intent)
                 finish()
             }
-            uiState.navigateToReport?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
+            uiState.navigateToReport?.getContentIfNotHandled() != null -> {
                 val currentArtwork = uiState.artwork
                 val intent = Intent(this, ReportActivity::class.java).apply {
                     currentArtwork?.let {
@@ -253,18 +240,16 @@ class ArtworkInfoActivity : AppCompatActivity() {
                         }
                     }
 
-                    // Pass user information
                     putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
                     putExtra(LoginActivity.EXTRA_USER_UID, userUid)
                 }
                 startActivity(intent)
             }
-            uiState.navigateToSimilarArtwork?.getContentIfNotHandled() != null -> { // Use getContentIfNotHandled()
-                val artworkId = uiState.navigateToSimilarArtwork.peekContent() // Use peekContent() to get data without marking as handled
+            uiState.navigateToSimilarArtwork?.getContentIfNotHandled() != null -> {
+                val artworkId = uiState.navigateToSimilarArtwork.peekContent()
                 val intent = Intent(this, ArtworkInfoActivity::class.java).apply {
                     putExtra("ARTWORK_ID", artworkId)
-                    // Pass user information to the next ArtworkInfoActivity
                     putExtra(LoginActivity.EXTRA_USER_EMAIL, userEmail)
                     putExtra(LoginActivity.EXTRA_USER_USERNAME, userUsername)
                     putExtra(LoginActivity.EXTRA_USER_UID, userUid)

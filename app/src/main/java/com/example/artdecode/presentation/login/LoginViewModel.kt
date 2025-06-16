@@ -31,20 +31,17 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
-// Data class to hold user information
 data class UserInfo(
     val uid: String,
     val email: String?,
     val username: String?
 )
 
-// Represents the different states of the login process
 sealed class LoginState {
     object Idle : LoginState()
     object Loading : LoginState()
     data class Success(val user: FirebaseUser) : LoginState()
     data class Error(val message: String) : LoginState()
-    // Specific error types for direct input feedback
     data class InputError(val emailError: String? = null, val passwordError: String? = null) : LoginState()
     data class GoogleSignInError(val message: String) : LoginState()
 }
@@ -59,31 +56,25 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val credentialManager: CredentialManager = CredentialManager.create(application)
 
-    // StateFlow for login state
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
-    // StateFlow for navigation events - now using UserInfo instead of FirebaseUser
     private val _navigateToHome = MutableStateFlow<Event<UserInfo>?>(null)
     val navigateToHome: StateFlow<Event<UserInfo>?> = _navigateToHome.asStateFlow()
 
     private val _navigateToSignUp = MutableStateFlow<Event<Unit>?>(null)
     val navigateToSignUp: StateFlow<Event<Unit>?> = _navigateToSignUp.asStateFlow()
 
-    // NEW: SharedFlow for Snackbar messages
     private val _snackbarMessage = MutableSharedFlow<Event<String>>()
     val snackbarMessage: SharedFlow<Event<String>> = _snackbarMessage
 
     private val _requestGoogleSignIn = MutableStateFlow<Event<GetCredentialRequest>?>(null)
     val requestGoogleSignIn: StateFlow<Event<GetCredentialRequest>?> = _requestGoogleSignIn.asStateFlow()
 
-    // User input
     private var email: String = ""
     private var password: String = ""
 
     init {
-        // Always sign out the current user when the ViewModel is initialized
-        // This ensures the login screen always starts from a logged-out state.
         auth.signOut()
         Log.d(TAG, "FirebaseAuth signed out at ViewModel init.")
     }
@@ -108,11 +99,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "Failed to fetch user info", error.toException())
-                // Still navigate with basic info from FirebaseUser
                 val userInfo = UserInfo(
                     uid = firebaseUser.uid,
                     email = firebaseUser.email,
-                    username = firebaseUser.displayName // Fallback to display name if available
+                    username = firebaseUser.displayName
                 )
                 _navigateToHome.value = Event(userInfo)
                 showSnackbar("Failed to retrieve full user information.")
@@ -122,7 +112,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateEmail(newEmail: String) {
         email = newEmail.trim()
-        // Clear previous email-related errors when user starts typing
         if (_loginState.value is LoginState.InputError) {
             val currentErrorState = _loginState.value as LoginState.InputError
             if (currentErrorState.emailError != null) {
@@ -133,7 +122,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updatePassword(newPassword: String) {
         password = newPassword
-        // Clear previous password-related errors when user starts typing
         if (_loginState.value is LoginState.InputError) {
             val currentErrorState = _loginState.value as LoginState.InputError
             if (currentErrorState.passwordError != null) {
@@ -154,14 +142,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         var passwordError: String? = null
 
         if (email.isEmpty()) {
-            emailError = app.getString(R.string.email_required) // More specific message
+            emailError = app.getString(R.string.email_required)
         } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailError = app.getString(R.string.incorrect_email_format)
         }
 
         if (password.isEmpty()) {
             passwordError = app.getString(R.string.password_required)
-        } else if (password.length < 6) { // Example: Add a minimum password length check
+        } else if (password.length < 6) {
             passwordError = app.getString(R.string.password_too_short)
         }
 
@@ -345,7 +333,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     Log.d(TAG, "Google signInWithCredential:success")
                     _loginState.value = LoginState.Success(user)
 
-                    // For Google Sign-In, also save/update user data in database if it's a new user
                     if (result.additionalUserInfo?.isNewUser == true) {
                         saveUserToDatabase(user)
                     }

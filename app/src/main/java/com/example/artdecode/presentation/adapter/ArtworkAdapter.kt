@@ -14,12 +14,8 @@ import com.example.artdecode.R
 import com.example.artdecode.data.model.Artwork
 import com.example.artdecode.data.model.RecyclerViewItem
 
-// Assuming this is actually your HomeAdapter
-// You might want to rename this file and class to HomeAdapter for consistency
 class ArtworkAdapter(
     private val onItemClick: (String?) -> Unit,
-    // REMOVED: onDeleteClick lambda from constructor
-    // private val onDeleteClick: (String?) -> Unit
 ) : ListAdapter<RecyclerViewItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
@@ -46,7 +42,6 @@ class ArtworkAdapter(
             VIEW_TYPE_ARTWORK -> {
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.item_collection, parent, false)
-                // REMOVED: onDeleteClick from ArtworkViewHolder constructor
                 ArtworkViewHolder(view, onItemClick)
             }
             VIEW_TYPE_MESSAGE -> {
@@ -77,15 +72,12 @@ class ArtworkAdapter(
     class ArtworkViewHolder(
         itemView: View,
         private val onItemClick: (String?) -> Unit,
-        // REMOVED: onDeleteClick from ArtworkViewHolder constructor
-        // private val onDeleteClick: (String?) -> Unit
+
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val artworkImage: ImageView = itemView.findViewById(R.id.artworkImage)
         private val artStyleTextView: TextView = itemView.findViewById(R.id.artStyle)
         private val confidenceTextView: TextView = itemView.findViewById(R.id.confidenceScore)
-        // REMOVED: deleteButton ImageView reference
-        // private val deleteButton: ImageView = itemView.findViewById(R.id.deleteButton)
 
         fun bind(artwork: Artwork) {
             artwork.imageUri?.let { uriString ->

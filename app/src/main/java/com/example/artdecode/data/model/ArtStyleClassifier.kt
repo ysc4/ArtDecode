@@ -17,9 +17,9 @@ class ArtStyleClassifier(private val context: Context) {
 
     companion object {
         private const val TAG = "ArtStyleClassifier"
-        private const val MODEL_FILENAME = "model.tflite" // Ensure this is your model file name
-        private const val INPUT_SIZE = 224 // Your model's expected input width/height
-        private const val NUM_CLASSES = 16 // CORRECTED: From 15 to 16, as you have Class 0 to Class 15
+        private const val MODEL_FILENAME = "model.tflite"
+        private const val INPUT_SIZE = 224
+        private const val NUM_CLASSES = 16
 
         private val ART_STYLES = arrayOf(
             "Art Nouveau Modern",       // Class 0
@@ -75,9 +75,9 @@ class ArtStyleClassifier(private val context: Context) {
             interpreter?.run(inputBuffer, outputArray)
 
             val probabilities = outputArray[0]
-            val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1 // Use -1 as default
+            val maxIndex = probabilities.indices.maxByOrNull { probabilities[it] } ?: -1
 
-            if (maxIndex != -1) { // Only proceed if a valid index was found
+            if (maxIndex != -1) {
                 val confidence = probabilities[maxIndex]
                 val artStyle = ART_STYLES.getOrElse(maxIndex) { "Unknown" }
 
@@ -102,17 +102,16 @@ class ArtStyleClassifier(private val context: Context) {
             ?: throw IllegalStateException("Could not decode bitmap from stream for URI: $imageUri")
         inputStream.close()
 
-        // Resize the image. .scale extension function handles scaling correctly.
         val scaledBitmap = originalBitmap.scale(INPUT_SIZE, INPUT_SIZE)
         if (scaledBitmap != originalBitmap) {
-            originalBitmap.recycle() // Recycle original if a new one was created by scale()
+            originalBitmap.recycle()
         }
         Log.d(TAG, "Image loaded and preprocessed to ${scaledBitmap.width}x${scaledBitmap.height}")
         return scaledBitmap
     }
 
     private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * INPUT_SIZE * INPUT_SIZE * 3) // 4 bytes per float
+        val byteBuffer = ByteBuffer.allocateDirect(4 * INPUT_SIZE * INPUT_SIZE * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
         val intValues = IntArray(INPUT_SIZE * INPUT_SIZE)

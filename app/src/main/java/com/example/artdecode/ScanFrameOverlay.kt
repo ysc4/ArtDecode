@@ -37,17 +37,15 @@ class ScanFrameOverlay @JvmOverloads constructor(
 
     fun updateFrame(rect: RectF) {
         frameRect.set(rect)
-        invalidate() // Trigger redraw
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         if (frameRect.isEmpty) {
-            // Calculate default frame if not set
             calculateDefaultFrame(canvas.width.toFloat(), canvas.height.toFloat())
         }
-
         drawScanFrame(canvas)
     }
 
@@ -65,32 +63,19 @@ class ScanFrameOverlay @JvmOverloads constructor(
         val width = canvas.width.toFloat()
         val height = canvas.height.toFloat()
 
-        // Draw dark overlay outside the frame
         drawOverlay(canvas, width, height)
-
-        // Draw frame border
         canvas.drawRect(frameRect, framePaint)
-
-        // Draw corner brackets
         drawCornerBrackets(canvas)
     }
 
     private fun drawOverlay(canvas: Canvas, width: Float, height: Float) {
-        // Top overlay
         canvas.drawRect(0f, 0f, width, frameRect.top, overlayPaint)
-
-        // Bottom overlay
         canvas.drawRect(0f, frameRect.bottom, width, height, overlayPaint)
-
-        // Left overlay
         canvas.drawRect(0f, frameRect.top, frameRect.left, frameRect.bottom, overlayPaint)
-
-        // Right overlay
         canvas.drawRect(frameRect.right, frameRect.top, width, frameRect.bottom, overlayPaint)
     }
 
     private fun drawCornerBrackets(canvas: Canvas) {
-        // Top-left corner
         canvas.drawLine(
             frameRect.left, frameRect.top + cornerLength,
             frameRect.left, frameRect.top, cornerPaint
@@ -99,8 +84,6 @@ class ScanFrameOverlay @JvmOverloads constructor(
             frameRect.left, frameRect.top,
             frameRect.left + cornerLength, frameRect.top, cornerPaint
         )
-
-        // Top-right corner
         canvas.drawLine(
             frameRect.right - cornerLength, frameRect.top,
             frameRect.right, frameRect.top, cornerPaint
@@ -109,8 +92,6 @@ class ScanFrameOverlay @JvmOverloads constructor(
             frameRect.right, frameRect.top,
             frameRect.right, frameRect.top + cornerLength, cornerPaint
         )
-
-        // Bottom-left corner
         canvas.drawLine(
             frameRect.left, frameRect.bottom - cornerLength,
             frameRect.left, frameRect.bottom, cornerPaint
@@ -119,8 +100,6 @@ class ScanFrameOverlay @JvmOverloads constructor(
             frameRect.left, frameRect.bottom,
             frameRect.left + cornerLength, frameRect.bottom, cornerPaint
         )
-
-        // Bottom-right corner
         canvas.drawLine(
             frameRect.right - cornerLength, frameRect.bottom,
             frameRect.right, frameRect.bottom, cornerPaint
