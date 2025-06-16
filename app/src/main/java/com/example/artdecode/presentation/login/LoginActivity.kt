@@ -20,6 +20,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.artdecode.ArtDecode // Import your custom Application class
 import com.example.artdecode.LoginState
 import com.example.artdecode.LoginViewModel
 import com.example.artdecode.R
@@ -108,6 +109,14 @@ class LoginActivity : AppCompatActivity() {
 
                             // Show welcome toast with user info
                             showWelcomeToast(userInfo)
+
+                            // --- CRITICAL ADDITION HERE ---
+                            // Get the singleton ArtworkRepositoryImpl instance
+                            val applicationInstance = application as ArtDecode
+                            applicationInstance.artworkRepository.setCurrentUserId(userInfo.uid)
+                            Log.d(TAG, "Set UID ${userInfo.uid} on singleton ArtworkRepository from LoginActivity.")
+                            // --- END CRITICAL ADDITION ---
+
 
                             val intent = Intent(this@LoginActivity, MainActivity::class.java).apply {
                                 putExtra(EXTRA_USER_EMAIL, userInfo.email)

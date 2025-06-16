@@ -7,20 +7,17 @@
     app:cardBackgroundColor="@color/gray"
     app:cardCornerRadius="20dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <!-- Artwork Image Card -->
         <androidx.cardview.widget.CardView
             android:id="@+id/imageCardView"
             android:layout_width="match_parent"
             android:layout_height="160dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:cardElevation="2dp">
 
             <ImageView
                 android:id="@+id/artworkImage"
@@ -31,16 +28,12 @@
 
         </androidx.cardview.widget.CardView>
 
-
         <LinearLayout
             android:id="@+id/textContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="75dp"
             android:orientation="vertical"
-            android:padding="10dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/imageCardView">
+            android:padding="10dp">
 
             <!-- Art Style -->
             <TextView
@@ -69,7 +62,6 @@
                 tools:text="89.91% Confidence" />
 
         </LinearLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </androidx.cardview.widget.CardView>

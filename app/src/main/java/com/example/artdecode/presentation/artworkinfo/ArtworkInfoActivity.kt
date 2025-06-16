@@ -126,8 +126,8 @@ class ArtworkInfoActivity : AppCompatActivity() {
             viewModel.uiState.collect { uiState ->
                 updateUI(uiState)
                 handleNavigation(uiState)
-                uiState.errorMessage?.let { msg ->
-                    Toast.makeText(this@ArtworkInfoActivity, msg, Toast.LENGTH_LONG).show()
+                uiState.errorMessage?.getContentIfNotHandled()?.let { message ->
+                    Toast.makeText(this@ArtworkInfoActivity, message, Toast.LENGTH_LONG).show()
                     // Clear the error message after showing
                     viewModel.onNavigationHandled() // This clears the error message flag
                 }
@@ -139,8 +139,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
         Log.d("ArtworkInfoActivity", "updateUI called. isLoading: ${uiState.isLoading}, artwork present: ${uiState.artwork != null}")
 
         uiState.artwork?.let { artwork ->
-            // Log.d("ArtworkInfoActivity", "Artwork ID: ${artwork.id}, isFavorite: ${artwork.isFavorite}") // REMOVED: Favorite log
-
             // Load the captured artwork image
             artwork.imageUri?.let { uriString ->
                 Glide.with(this)
@@ -164,10 +162,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
             val styleImageResId = ArtStyleDescriptionProvider.getStyleImageResId(artwork.artStyle)
             artStyleImageView.setImageResource(styleImageResId)
 
-            // REMOVED: Favorite button image setting
-            // val favoriteIconRes = if (artwork.isFavorite) R.drawable.active_heart else R.drawable.inactive_heart
-            // Log.d("ArtworkInfoActivity", "Setting favorite button image. isFavorite: ${artwork.isFavorite}, drawable: ${resources.getResourceEntryName(favoriteIconRes)}")
-            // favoriteButton.setImageResource(favoriteIconRes)
 
         } ?: run {
             Log.d("ArtworkInfoActivity", "Artwork is null in UI state.")
@@ -176,8 +170,6 @@ class ArtworkInfoActivity : AppCompatActivity() {
             confidenceScoreTextView.text = "N/A"
             styleDescriptionTextView.text = "Artwork details not available."
             artStyleImageView.setImageResource(R.drawable.default_art_style_image)
-            // REMOVED: Default favorite button image setting
-            // favoriteButton.setImageResource(R.drawable.inactive_heart)
         }
 
         similarArtworksContainer.removeAllViews()

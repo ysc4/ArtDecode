@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.example.artdecode.ArtDecode
 import com.example.artdecode.R
 import com.example.artdecode.data.model.RecyclerViewItem
 import com.example.artdecode.data.repository.ArtworkRepositoryImpl
@@ -79,14 +80,25 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupViewModel() {
-        val repository = ArtworkRepositoryImpl(requireContext())
-        val factory = HomeViewModelFactory(repository)
+        val application = requireActivity().application as ArtDecode
+        val repository = application.artworkRepository // Get the singleton instance
+
+        userUid?.let { uid ->
+            // This ensures the repository's internal _currentUserId Flow is updated.
+            // This is the ONLY place you need to explicitly set the user ID
+            // for the entire application's data layer state.
+            repository.setCurrentUserId(uid)
+            Log.d("HomeFragment", "Set UID $uid on singleton ArtworkRepository from HomeFragment.")
+        } ?: run {
+            Log.e("HomeFragment", "userUid is NULL in HomeFragment setupViewModel! Cannot set repository UID.")
+            // Consider redirecting to login or showing an error if userUid is critical and null here.
+        }
+
+        // Pass applicationContext to the factory
+        val factory = HomeViewModelFactory(requireContext().applicationContext)
         viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
 
-        // Set the current user ID in the ViewModel to filter artworks
-        userUid?.let { uid ->
-            viewModel.setCurrentUserId(uid)
-        }
+        // No need to call viewModel.setCurrentUserId(uid) anymore as it was removed from ViewModel
     }
 
     private fun setupRecyclerView(view: View) {
@@ -127,35 +139,28 @@ class HomeFragment : Fragment() {
         if (position < currentItems.size) {
             val item = currentItems[position]
 
-            // Only delete if it's an artwork item (not header)
+            // Only delete if it's an artwork item (not header or message)
             if (item is RecyclerViewItem.ArtworkItem) {
                 val artworkToDelete = item.artwork
                 val artworkId = artworkToDelete.id
 
                 // Show confirmation with Snackbar and undo option
                 val snackbar = Snackbar.make(
-                    recyclerView,
+                    recyclerView, // Use recyclerView as the anchor view for Snackbar
                     "Artwork deleted",
                     Snackbar.LENGTH_LONG
                 ).setAction("UNDO") {
                     // Restore the artwork if user clicks undo
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        try {
-                            viewModel.artworkRepository.saveArtwork(artworkToDelete)
-                            Log.d("HomeFragment", "Artwork restored successfully")
-                        } catch (e: Exception) {
-                            Log.e("HomeFragment", "Error restoring artwork: ${e.message}")
-                            Snackbar.make(recyclerView, "Failed to restore artwork", Snackbar.LENGTH_SHORT).show()
-                        }
-                    }
+                    // CALL THE VIEWMODEL'S PUBLIC METHOD
+                    viewModel.restoreArtwork(artworkToDelete) // <-- FIXED LINE
                 }
 
-                // Delete the artwork
+                // Delete the artwork (this triggers the initial delete, undo restores)
                 viewModel.deleteArtwork(artworkId)
 
                 snackbar.show()
             } else {
-                // If somehow a header was swiped, refresh the adapter
+                // If somehow a header/message was swiped, refresh the adapter
                 adapter.notifyItemChanged(position)
             }
         }

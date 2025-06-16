@@ -1,12 +1,11 @@
 package com.example.artdecode.presentation.report
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.artdecode.R
 import com.example.artdecode.ReportViewModel
 import com.example.artdecode.presentation.artworkinfo.ArtworkInfoActivity
+import com.google.android.material.snackbar.Snackbar // Import Snackbar
 
 class ReportActivity : AppCompatActivity() {
 
@@ -26,12 +26,16 @@ class ReportActivity : AppCompatActivity() {
     private var artStyle: String? = null
     private var confidenceScore: Float? = null
 
+    private lateinit var rootView: View
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_report)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        rootView = findViewById(R.id.main) // Ensure R.id.main is the root layout of your activity_report.xml
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -55,8 +59,14 @@ class ReportActivity : AppCompatActivity() {
 
         submitButton.setOnClickListener {
             val reportText = reportInput.text.toString().trim()
+
+            // --- ADDED: Snackbar for report length validation ---
             if (reportText.isEmpty()) {
-                Toast.makeText(this, "Please enter a report description", Toast.LENGTH_SHORT).show()
+                Snackbar.make(rootView, "Please enter a report description", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (reportText.length < 10) { // Check for minimum length
+                Snackbar.make(rootView, "Report must be at least 10 characters long", Snackbar.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
@@ -81,17 +91,14 @@ class ReportActivity : AppCompatActivity() {
 
         viewModel.showSuccessDialogAndFinish.observe(this) { event ->
             event.getContentIfNotHandled()?.let {
-                AlertDialog.Builder(this)
-                    .setTitle("Success")
-                    .setMessage("Report submitted successfully")
-                    .setPositiveButton("OK") { _, _ ->
-                        // After success, also navigate back to the original ArtworkInfoActivity
-                        viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
-                    }
-                    .setOnCancelListener {
-                        // Also navigate back if dialog is cancelled
-                        viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
-                    }
+                Snackbar.make(rootView, "Report submitted successfully", Snackbar.LENGTH_LONG)
+                    .addCallback(object : Snackbar.Callback() {
+                        override fun onDismissed(transientBottomBar: Snackbar, event: Int) {
+                            super.onDismissed(transientBottomBar, event)
+                            // Navigate back to ArtworkInfoActivity after Snackbar dismisses
+                            viewModel.onBackClicked(artworkId, capturedImageUri, artStyle, confidenceScore)
+                        }
+                    })
                     .show()
             }
         }
@@ -99,11 +106,7 @@ class ReportActivity : AppCompatActivity() {
         viewModel.showError.observe(this) { event ->
             event.getContentIfNotHandled()?.let { errorMessage ->
                 findViewById<Button>(R.id.submitButton).isEnabled = true // Re-enable submit button on error
-                AlertDialog.Builder(this)
-                    .setTitle("Error")
-                    .setMessage(errorMessage)
-                    .setPositiveButton("OK", null)
-                    .show()
+                Snackbar.make(rootView, "Error: $errorMessage", Snackbar.LENGTH_LONG).show() // Use Snackbar for errors too
             }
         }
 
