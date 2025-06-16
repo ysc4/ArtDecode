@@ -4,18 +4,17 @@ import com.example.artdecode.data.model.Artwork
 import kotlinx.coroutines.flow.Flow
 
 interface ArtworkRepository {
-    // Existing methods (updated to use Artwork or String ID for favorites)
-    fun getArtworks(): Flow<List<Artwork>> // Still provides dummy local data initially
-    suspend fun toggleFavorite(artworkId: String)
-    suspend fun getFavoriteState(artworkId: String): Boolean
-    suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean)
-    // suspend fun deleteArtwork(id: String)
-
-    // NEW methods for Firebase
+    fun getArtworks(): Flow<List<Artwork>>
     suspend fun saveArtwork(artwork: Artwork): Artwork
     suspend fun getArtworkById(id: String): Artwork?
+    suspend fun deleteArtwork(artworkId: String)
     fun getSimilarArtworks(artStyle: String, excludeArtworkId: String?): Flow<List<Artwork>>
     fun updateArtworkInFlow(artwork: Artwork)
+    fun setCurrentUserId(userId: String?)
 
-
+    // REMOVED: Methods for Favorite Status
+    fun getArtworkFlowById(artworkId: String): Flow<Artwork?> // No longer strictly needed for a 'favorite' flow, but still useful for general live artwork data
+    // suspend fun toggleFavorite(artworkId: String)
+    // suspend fun getFavoriteState(artworkId: String): Boolean
+    // suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean)
 }

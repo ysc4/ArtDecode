@@ -15,7 +15,7 @@
         android:id="@+id/textView10"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="72dp"
+        android:layout_marginTop="80dp"
         android:fontFamily="@font/poppins_bold"
         android:text="Sign Up"
         android:textColor="@color/navy_blue"
@@ -113,20 +113,20 @@
         android:id="@+id/signUpConfirm"
         android:layout_width="335dp"
         android:layout_height="50dp"
-        android:layout_marginTop="44dp"
+        android:layout_marginTop="24dp"
         android:background="@drawable/rounded_blue_button"
         android:fontFamily="@font/poppins_bold"
         android:text="SIGN UP"
         android:textColor="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkBox" />
+        app:layout_constraintTop_toBottomOf="@+id/checkBoxTerms" />
 
     <TextView
         android:id="@+id/loginLink"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="16dp"
         android:clickable="true"
         android:focusable="true"
         android:fontFamily="@font/poppins_regular"
@@ -138,33 +138,30 @@
         app:layout_constraintTop_toBottomOf="@+id/signUpConfirm" />
 
     <CheckBox
-        android:id="@+id/checkBox"
+        android:id="@+id/checkBoxPrivacy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="16dp"
         android:fontFamily="@font/poppins_regular"
-        android:text="I agree to the Terms and Conditions"
+        android:text="I agree to the Privacy Policy"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.239"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/repeatPassword" />
 
-    <TextView
-        android:id="@+id/termsErrorTextView"
+    <CheckBox
+        android:id="@+id/checkBoxTerms"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="17dp"
-        android:fontFamily="@font/poppins_light"
-        android:text="You must agree to the Terms and Conditons"
-        android:textColor="@color/red"
-        android:textSize="12sp"
-        app:layout_constraintBottom_toTopOf="@+id/signUpConfirm"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="6dp"
+        android:fontFamily="@font/poppins_regular"
+        android:text="I agree to the Terms and Conditions"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.2"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkBox"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toBottomOf="@+id/checkBoxPrivacy" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -97,35 +97,6 @@
                         app:layout_constraintVertical_bias="1.0"
                         tools:srcCompat="@tools:sample/backgrounds/scenic" />
 
-                    <FrameLayout
-                        android:id="@+id/favoriteButtonContainer"
-                        android:layout_width="35dp"
-                        android:layout_height="35dp"
-                        android:layout_marginTop="10dp"
-                        app:layout_constraintBottom_toBottomOf="@+id/artworkImage"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="0.03"
-                        app:layout_constraintStart_toStartOf="@+id/artworkImage"
-                        app:layout_constraintTop_toTopOf="@+id/artworkImage"
-                        app:layout_constraintVertical_bias="0.0">
-
-                        <!-- Heart icon -->
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/ripple_circle" />
-
-                        <ImageButton
-                            android:id="@+id/favoriteButton"
-                            android:layout_width="25dp"
-                            android:layout_height="25dp"
-                            android:layout_gravity="center"
-                            android:background="@android:color/transparent"
-                            android:contentDescription="Add to favorites"
-                            android:scaleType="fitCenter"
-                            android:src="@drawable/active_heart" />
-                    </FrameLayout>
-
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.cardview.widget.CardView>
 
@@ -215,7 +186,7 @@
                             android:layout_height="25dp"
                             android:layout_marginStart="200dp"
                             android:layout_marginEnd="30dp"
-                            android:background="@color/light_gray"
+                            android:background="@color/gray"
                             android:scaleType="centerInside"
                             app:srcCompat="@drawable/report" />
 
@@ -233,6 +204,7 @@
                 android:layout_marginBottom="15dp"
                 android:fontFamily="@font/poppins_medium"
                 android:text="Abstract Expressionism is a post-1940s art movement focused on spontaneous, emotional expression through non-representational forms. Artists used bold colors and gestures to convey inner feelings. It emphasized the act of painting as a form of personal expression."
+                android:textAlignment="textStart"
                 android:textColor="@color/black"
                 android:textSize="12sp" />
 

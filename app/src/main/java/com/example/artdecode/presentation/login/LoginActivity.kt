@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -20,13 +19,12 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.artdecode.LoginState
-import com.example.artdecode.LoginViewModel
+import com.example.artdecode.ArtDecode // Import your custom Application class
 import com.example.artdecode.R
-import com.example.artdecode.UserInfo
 import com.example.artdecode.presentation.signup.SignUpActivity
 import com.example.artdecode.databinding.ActivityLoginBinding
 import com.example.artdecode.presentation.main.MainActivity
+import com.google.android.material.snackbar.Snackbar // Import Snackbar
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -100,7 +98,7 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
 
-                // Observe navigation events
+                // Observe navigation events to Home
                 launch {
                     viewModel.navigateToHome.collect { event ->
                         event?.getContentIfNotHandled()?.let { userInfo ->
@@ -108,6 +106,13 @@ class LoginActivity : AppCompatActivity() {
 
                             // Show welcome toast with user info
                             showWelcomeToast(userInfo)
+
+                            // --- CRITICAL ADDITION HERE ---
+                            // Get the singleton ArtworkRepositoryImpl instance
+                            val applicationInstance = application as ArtDecode
+                            applicationInstance.artworkRepository.setCurrentUserId(userInfo.uid)
+                            Log.d(TAG, "Set UID ${userInfo.uid} on singleton ArtworkRepository from LoginActivity.")
+                            // --- END CRITICAL ADDITION ---
 
                             val intent = Intent(this@LoginActivity, MainActivity::class.java).apply {
                                 putExtra(EXTRA_USER_EMAIL, userInfo.email)
@@ -120,6 +125,7 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
 
+                // Observe navigation events to Sign Up
                 launch {
                     viewModel.navigateToSignUp.collect { event ->
                         event?.getContentIfNotHandled()?.let {
@@ -128,11 +134,11 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
 
-                // Observe toast messages
+                // Observe Snackbar messages
                 launch {
-                    viewModel.toastMessage.collect { event ->
-                        event?.getContentIfNotHandled()?.let { message ->
-                            Toast.makeText(this@LoginActivity, message, Toast.LENGTH_LONG).show()
+                    viewModel.snackbarMessage.collect { event ->
+                        event.getContentIfNotHandled()?.let { message ->
+                            Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -150,27 +156,25 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun handleLoginState(state: LoginState) {
-        // Clear previous errors
+        // Always clear general error text when state changes, it will be reset if needed.
         binding.errorHandlingText.isVisible = false
-        binding.email.error = null
-        binding.password.error = null
 
         // Manage loading state
         val isLoading = state is LoginState.Loading
         binding.loginBtn.isEnabled = !isLoading
         binding.googleLoginBtn.isEnabled = !isLoading
-
-        // Show/hide loading indicator if available
-        // binding.progressBar.isVisible = isLoading
+        // binding.progressBar.isVisible = isLoading // Uncomment if you have a progress bar
 
         when (state) {
             is LoginState.Idle -> {
-                // Default state - ensure buttons are enabled
-                binding.loginBtn.isEnabled = true
-                binding.googleLoginBtn.isEnabled = true
+                // Clear any lingering input errors when returning to idle
+                binding.email.error = null
+                binding.password.error = null
             }
             is LoginState.Loading -> {
-                // Loading state handled above
+                // Clear input errors when loading begins
+                binding.email.error = null
+                binding.password.error = null
                 Log.d(TAG, "Login in progress...")
             }
             is LoginState.Success -> {
@@ -179,22 +183,19 @@ class LoginActivity : AppCompatActivity() {
             }
             is LoginState.Error -> {
                 Log.e(TAG, "Login error: ${state.message}")
-                showGlobalError(state.message)
+                // Global errors are now handled by Snackbar directly from ViewModel
+                // The Snackbar message will be shown via the snackbarMessage SharedFlow.
             }
-            is LoginState.EmailError -> {
-                Log.w(TAG, "Email validation error: ${state.message}")
-                binding.email.error = state.message
-            }
-            is LoginState.PasswordError -> {
-                Log.w(TAG, "Password validation error: ${state.message}")
-                binding.password.error = state.message
+            is LoginState.InputError -> {
+                Log.w(TAG, "Input validation error - Email: ${state.emailError}, Password: ${state.passwordError}")
+                binding.email.error = state.emailError // Set error on email input
+                binding.password.error = state.passwordError // Set error on password input
             }
             is LoginState.GoogleSignInError -> {
                 Log.w(TAG, "Google Sign-In error: ${state.message}")
-                showGlobalError(state.message)
+                // Google Sign-In errors are now handled by Snackbar directly from ViewModel
+                // The Snackbar message will be shown via the snackbarMessage SharedFlow.
             }
-
-            else -> {}
         }
     }
 
@@ -215,30 +216,13 @@ class LoginActivity : AppCompatActivity() {
 
             } catch (e: GetCredentialException) {
                 Log.w(TAG, "Google Sign-In GetCredentialException", e)
-                when (e) {
-                    is androidx.credentials.exceptions.GetCredentialCancellationException -> {
-                        Log.d(TAG, "Google Sign-In was cancelled by user")
-                        // Don't show error toast for user cancellation
-                    }
-                    is androidx.credentials.exceptions.NoCredentialException -> {
-                        Log.w(TAG, "No Google credentials available")
-                        viewModel.showToast("No Google account found. Please add a Google account to your device.")
-                    }
-                    else -> {
-                        Log.e(TAG, "Google Sign-In credential error: ${e.message}")
-                        viewModel.handleGoogleSignInError(e)
-                    }
-                }
+                // ViewModel now handles specific GetCredentialException types and emits Snackbar messages
+                viewModel.handleGoogleSignInError(e)
             } catch (e: Exception) {
                 Log.e(TAG, "Unexpected error during Google Sign-In", e)
-                viewModel.showToast("Could not start Google Sign-In. Please try again.")
+                viewModel.showSnackbar("Could not start Google Sign-In. Please try again.")
             }
         }
-    }
-
-    private fun showGlobalError(message: String) {
-        binding.errorHandlingText.text = message
-        binding.errorHandlingText.isVisible = true
     }
 
     private fun showWelcomeToast(userInfo: UserInfo) {
@@ -248,7 +232,6 @@ class LoginActivity : AppCompatActivity() {
             userInfo.username?.let { username ->
                 if (username.isNotBlank()) {
                     append(username)
-                    userInfo.email?.let { email -> append(" ($email)") }
                 } else {
                     userInfo.email?.let { email -> append(email) }
                 }
@@ -257,8 +240,8 @@ class LoginActivity : AppCompatActivity() {
             } ?: append("User")
         }
 
-        Toast.makeText(this, welcomeMessage, Toast.LENGTH_LONG).show()
-        Log.d(TAG, "Showed welcome toast: $welcomeMessage")
+        Snackbar.make(binding.root, welcomeMessage, Snackbar.LENGTH_LONG).show() // Changed to Snackbar
+        Log.d(TAG, "Showed welcome message: $welcomeMessage")
     }
 
     private fun togglePasswordVisibility() {
@@ -266,10 +249,10 @@ class LoginActivity : AppCompatActivity() {
             val isPasswordVisible = transformationMethod != PasswordTransformationMethod.getInstance()
 
             transformationMethod = if (isPasswordVisible) {
-                binding.togglePasswordVisibility.setImageResource(R.drawable.eye)
+                binding.togglePasswordVisibility.setImageResource(R.drawable.eye) // Assuming eye icon for hidden
                 PasswordTransformationMethod.getInstance()
             } else {
-                binding.togglePasswordVisibility.setImageResource(R.drawable.eye_slash)
+                binding.togglePasswordVisibility.setImageResource(R.drawable.eye_slash) // Assuming eye_slash for visible
                 HideReturnsTransformationMethod.getInstance()
             }
 

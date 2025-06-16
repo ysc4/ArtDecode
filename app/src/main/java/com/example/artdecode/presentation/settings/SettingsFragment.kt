@@ -1,11 +1,13 @@
 package com.example.artdecode.presentation.settings
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Switch
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.ViewModelProvider
 import com.example.artdecode.R
@@ -19,6 +21,7 @@ class SettingsFragment : Fragment() {
     private lateinit var privacy: CardView
     private lateinit var terms: CardView
     private lateinit var logout: CardView
+    private lateinit var cameraSwitch: Switch
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,6 +33,7 @@ class SettingsFragment : Fragment() {
         initializeViewModel()
         setupObservers()
         setupClickListeners()
+        loadSettings()
 
         return view
     }
@@ -38,6 +42,7 @@ class SettingsFragment : Fragment() {
         privacy = view.findViewById(R.id.privacyPolicy)
         terms = view.findViewById(R.id.termsAndConditions)
         logout = view.findViewById(R.id.logOut)
+        cameraSwitch = view.findViewById(R.id.cameraSwitch)
     }
 
     private fun initializeViewModel() {
@@ -50,6 +55,10 @@ class SettingsFragment : Fragment() {
                 navigateToLogin()
                 viewModel.onLogoutHandled()
             }
+        }
+
+        viewModel.cameraOnlyMode.observe(viewLifecycleOwner) { isCameraOnly ->
+            cameraSwitch.isChecked = isCameraOnly
         }
     }
 
@@ -65,6 +74,14 @@ class SettingsFragment : Fragment() {
         logout.setOnClickListener {
             viewModel.logout()
         }
+
+        cameraSwitch.setOnCheckedChangeListener { _, isChecked ->
+            viewModel.setCameraOnlyMode(isChecked)
+        }
+    }
+
+    private fun loadSettings() {
+        viewModel.loadSettings()
     }
 
     private fun navigateToPrivacyPolicy() {
