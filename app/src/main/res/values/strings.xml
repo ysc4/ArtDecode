@@ -29,6 +29,9 @@
     <string name="google_auth_failed">Google authentication failed</string>
     <string name="google_config_error">Google Sign-In configuration error</string>
 
+    <string name="password_too_short">Password too short</string>
+    <string name="please_correct_input_errors">Correct input errors</string>
+
     <string name="account_created_success">Account created successfully!</string>
     <string name="login_success">Login successful!</string>
 
@@ -39,5 +42,6 @@
     <string name="login">Login</string>
     <string name="google_sign_in">Continue with Google</string>
 
-    <string name="default_web_client_id">YOUR_GOOGLE_WEB_CLIENT_ID_HERE</string>
+    <string name="default_web_client_id">1068502476521-49gq1ed520e86e3e9ekhtospqdek396b.apps.googleusercontent.com</string>
+
 </resources>
