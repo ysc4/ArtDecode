@@ -1,3 +1,5 @@
+package com.example.artdecode.presentation.artworkinfo
+
 import com.example.artdecode.data.model.Artwork
 import com.example.artdecode.utils.Event
 

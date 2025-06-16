@@ -1,6 +1,6 @@
 package com.example.artdecode.presentation.artworkinfo
 
-import ArtworkInfoUiState
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.artdecode.data.model.Artwork
@@ -9,9 +9,9 @@ import com.example.artdecode.utils.Event
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine // Import combine
-import kotlinx.coroutines.flow.launchIn // Import launchIn
-import kotlinx.coroutines.flow.onEach // Import onEach
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class ArtworkInfoViewModel(
@@ -48,10 +48,8 @@ class ArtworkInfoViewModel(
 
         viewModelScope.launch {
             if (artworkId != null) {
-                // If we have an artwork ID, observe its live data from the repository
-                artworkRepository.getArtworkFlowById(artworkId) // NOW OBSERVING A FLOW!
+                artworkRepository.getArtworkFlowById(artworkId)
                     .combine(artworkRepository.getSimilarArtworks(artStyle ?: "", artworkId)) { artwork, similarArtworks ->
-                        // Filter similar artworks by current user
                         val filteredSimilarArtworks = if (currentUserId != null) {
                             similarArtworks.filter { it.userId == currentUserId }
                         } else {
@@ -77,7 +75,7 @@ class ArtworkInfoViewModel(
                     imageUri = capturedImageUri,
                     artStyle = artStyle,
                     confidenceScore = confidenceScore,
-                    isFavorite = false, // Default for new scans, can be toggled later
+                    // isFavorite = false, // REMOVED: Default for new scans, can be toggled later
                     userId = currentUserId // Associate with current user
                 )
 
@@ -100,6 +98,8 @@ class ArtworkInfoViewModel(
         }
     }
 
+    // REMOVED: toggleFavorite function
+    /*
     fun toggleFavorite() {
         viewModelScope.launch {
             val currentArtwork = _uiState.value.artwork
@@ -108,8 +108,6 @@ class ArtworkInfoViewModel(
                     // Artwork is already in DB, toggle its favorite status
                     try {
                         artworkRepository.toggleFavorite(currentArtwork.id)
-                        // UI will update automatically because ArtworkInfoViewModel is now observing
-                        // the live Artwork Flow from the repository.
                         _uiState.value = _uiState.value.copy(errorMessage = null) // Clear any previous error
                     } catch (e: Exception) {
                         _uiState.value = _uiState.value.copy(errorMessage = "Failed to toggle favorite: ${e.message}")
@@ -120,9 +118,7 @@ class ArtworkInfoViewModel(
                         // Create a new Artwork object with the favorite status toggled and user ID set
                         val artworkToSave = currentArtwork.copy(isFavorite = !currentArtwork.isFavorite, userId = currentUserId)
                         val savedArtwork = artworkRepository.saveArtwork(artworkToSave)
-                        // After saving, reload info using the new ID so it's observed live
                         _uiState.value = _uiState.value.copy(errorMessage = "Artwork saved to favorites and will now update live.")
-                        // This will trigger the loadArtworkInfo for the saved artwork's ID
                         loadArtworkInfo(savedArtwork.id, null, null, null)
                     } catch (e: Exception) {
                         _uiState.value = _uiState.value.copy(errorMessage = "Failed to save artwork to favorites: ${e.message}")
@@ -131,6 +127,7 @@ class ArtworkInfoViewModel(
             }
         }
     }
+    */
 
     fun onScanMoreClick() {
         _uiState.value = _uiState.value.copy(navigateToScan = Event(Unit))

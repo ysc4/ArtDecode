@@ -11,7 +11,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.map // Import for map operator
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -28,10 +28,6 @@ class ArtworkRepositoryImpl(
             override fun onDataChange(snapshot: DataSnapshot) {
                 val artworks = snapshot.children.mapNotNull { childSnapshot ->
                     val artwork = childSnapshot.getValue(Artwork::class.java)?.copy(id = childSnapshot.key)
-                    // IMPORTANT: If your Firebase database has both 'favorite' and 'isFavorite' fields
-                    // you MUST ensure that only 'isFavorite' is used here, or migrate your data.
-                    // If 'favorite' exists and 'isFavorite' does not, you might need to handle it.
-                    // For example: childSnapshot.child("favorite").getValue(Boolean::class.java) ?: false
                     artwork
                 }
                 _allArtworksFlow.value = artworks
@@ -46,9 +42,8 @@ class ArtworkRepositoryImpl(
 
     override fun getArtworks(): Flow<List<Artwork>> = _allArtworksFlow
 
-    // NEW: Implementation for getArtworkFlowById
+    // Kept this as it's used by ArtworkInfoViewModel for general artwork observation
     override fun getArtworkFlowById(artworkId: String): Flow<Artwork?> {
-        // We can map from the _allArtworksFlow to get a single artwork's live updates
         return _allArtworksFlow.map { artworks ->
             artworks.find { it.id == artworkId }
         }
@@ -66,7 +61,7 @@ class ArtworkRepositoryImpl(
 
     override suspend fun saveArtwork(artwork: Artwork): Artwork {
         val artworkId = artwork.id ?: databaseRef.push().key ?: UUID.randomUUID().toString()
-        val artworkToSave = artwork.copy(id = artworkId) // Ensure ID is part of the object saved
+        val artworkToSave = artwork.copy(id = artworkId) // Ensure no isFavorite field is copied here if Artwork data class is updated
 
         return try {
             databaseRef.child(artworkId).setValue(artworkToSave).await()
@@ -82,18 +77,18 @@ class ArtworkRepositoryImpl(
         try {
             databaseRef.child(artworkId).removeValue().await()
             Log.d("ArtworkRepository", "Artwork deleted from Firebase: $artworkId")
-            // Local flow update is handled by the ValueEventListener.
-            // For immediate UI update, you *could* filter _allArtworksFlow.value = _allArtworksFlow.value.filter { it.id != artworkId }
-            // but the listener will eventually do it anyway.
+            // Local flow update for immediate UI response. The Firebase listener will reconcile.
+            _allArtworksFlow.value = _allArtworksFlow.value.filter { it.id != artworkId }
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error deleting artwork $artworkId: ${e.message}")
             throw e
         }
     }
 
+    // REMOVED: toggleFavorite function
+    /*
     override suspend fun toggleFavorite(artworkId: String) {
         try {
-            // Ensure we are only interacting with the 'isFavorite' field in Firebase
             val snapshot = databaseRef.child(artworkId).child("isFavorite").get().await()
             val currentFavoriteState = snapshot.getValue(Boolean::class.java) ?: false
             val newFavoriteState = !currentFavoriteState
@@ -101,16 +96,26 @@ class ArtworkRepositoryImpl(
             databaseRef.child(artworkId).child("isFavorite").setValue(newFavoriteState).await()
             Log.d("ArtworkRepository", "Toggled favorite for $artworkId to $newFavoriteState (using isFavorite field)")
 
-            // The _allArtworksFlow listener will automatically pick this change up and update,
-            // which will then propagate to any UIs observing that flow (like ArtworkInfoViewModel).
-            // No explicit updateArtworkInFlow call needed here if the listener handles it.
+            // --- OPTIMISTIC LOCAL UI UPDATE ---
+            val updatedList = _allArtworksFlow.value.map { artwork ->
+                if (artwork.id == artworkId) {
+                    artwork.copy(isFavorite = newFavoriteState)
+                } else {
+                    artwork
+                }
+            }
+            _allArtworksFlow.value = updatedList
+            Log.d("ArtworkRepository", "Locally updated favorite status for $artworkId to $newFavoriteState in _allArtworksFlow.")
+
         } catch (e: Exception) {
             Log.e("ArtworkRepository", "Error toggling favorite for $artworkId: ${e.message}")
             throw e
         }
     }
+    */
 
-    // Ensure these methods also consistently use 'isFavorite'
+    // REMOVED: getFavoriteState function
+    /*
     override suspend fun getFavoriteState(artworkId: String): Boolean {
         return try {
             val snapshot = databaseRef.child(artworkId).child("isFavorite").get().await()
@@ -120,7 +125,10 @@ class ArtworkRepositoryImpl(
             false
         }
     }
+    */
 
+    // REMOVED: saveFavoriteState function
+    /*
     override suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean) {
         try {
             databaseRef.child(artworkId).child("isFavorite").setValue(isFavorite).await()
@@ -130,10 +138,9 @@ class ArtworkRepositoryImpl(
             throw e
         }
     }
+    */
 
     override fun updateArtworkInFlow(artwork: Artwork) {
-        // This utility method can be used for local UI updates if the Firebase listener is too slow,
-        // but often the listener's update is sufficient for consistency.
         _allArtworksFlow.value = _allArtworksFlow.value.map {
             if (it.id == artwork.id) artwork else it
         }

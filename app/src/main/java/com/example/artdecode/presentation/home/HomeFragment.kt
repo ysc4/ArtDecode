@@ -99,16 +99,13 @@ class HomeFragment : Fragment() {
             }
         }
         recyclerView.layoutManager = gridLayoutManager
-
+        recyclerView.itemAnimator = null
         val spacing = (18 * resources.displayMetrics.density).toInt()
         recyclerView.addItemDecoration(GridSpacingItemDecoration(2, spacing, true))
 
         adapter = ArtworkAdapter(
             onItemClick = { artworkId: String? ->
                 viewModel.onArtworkClick(artworkId)
-            },
-            onFavoriteClick = { artworkId: String? ->
-                viewModel.onFavoriteClick(artworkId)
             }
         )
         recyclerView.adapter = adapter

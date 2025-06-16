@@ -2,12 +2,11 @@ package com.example.artdecode.presentation.signup
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.view.View
-import android.widget.Button
-import android.widget.CheckBox // Import CheckBox
-import android.widget.EditText
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
@@ -20,58 +19,53 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.artdecode.R
 import com.example.artdecode.databinding.ActivitySignUpBinding
 import com.example.artdecode.presentation.login.LoginActivity
+import com.example.artdecode.presentation.terms.TermsActivity
+import com.example.artdecode.presentation.privacy.PrivacyPolicyActivity
 import kotlinx.coroutines.launch
 
 class SignUpActivity : AppCompatActivity() {
 
     private val viewModel: SignUpViewModel by viewModels()
-    private lateinit var binding: ActivitySignUpBinding // Using ViewBinding, so stick to it
-
-    // Remove these direct variables, use binding.emailInput.text.toString() instead
-    // private var email = ""
-    // private var username = ""
-    // private var password = ""
-    // private var confirmPassword = ""
+    private lateinit var binding: ActivitySignUpBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        binding = ActivitySignUpBinding.inflate(layoutInflater) // Initialize binding
-        setContentView(binding.root) // Use binding.root
+        binding = ActivitySignUpBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         setupWindowInsets()
-        setupUIListeners() // Renamed to use binding
+        setupUIListeners()
+        setupCheckboxLinks() // NEW: Set up clickable links within checkboxes
         observeViewModel()
         handleBackPress()
     }
 
     private fun setupWindowInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets -> // Use binding.root
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
     }
 
-    // Updated to use ViewBinding
     private fun setupUIListeners() {
         with(binding) {
-            emailInput.doAfterTextChanged { /* No need to store in local var if passing directly */ }
-            usernameInput.doAfterTextChanged { /* No need to store in local var if passing directly */ }
-            passwordInput.doAfterTextChanged { /* No need to store in local var if passing directly */ }
-            repeatPassword.doAfterTextChanged { /* No need to store in local var if passing directly */ }
+            emailInput.doAfterTextChanged { }
+            usernameInput.doAfterTextChanged { }
+            passwordInput.doAfterTextChanged { }
+            repeatPassword.doAfterTextChanged { }
 
             signUpConfirm.setOnClickListener {
-                // Pass all input values and checkbox state to the ViewModel
                 viewModel.signUp(
                     emailInput.text.toString().trim(),
                     usernameInput.text.toString().trim(),
                     passwordInput.text.toString(),
                     repeatPassword.text.toString(),
-                    checkBox.isChecked // Pass the checked state of the checkbox
+                    checkBoxPrivacy.isChecked, // Pass privacy policy checkbox state
+                    checkBoxTerms.isChecked // Pass terms and conditions checkbox state
                 )
             }
 
@@ -81,9 +75,58 @@ class SignUpActivity : AppCompatActivity() {
         }
     }
 
-    // Updated to use ViewBinding
+    private fun setupCheckboxLinks() {
+        // Privacy Policy CheckBox
+        val privacyText = "I agree to the Privacy Policy"
+        val privacyPolicySpannable = SpannableString(privacyText)
+        val privacyPolicyClickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                // Navigate to Privacy Policy Activity
+                startActivity(Intent(this@SignUpActivity, PrivacyPolicyActivity::class.java))
+            }
+            // Optional: Customize link appearance (e.g., remove underline)
+            override fun updateDrawState(ds: android.text.TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true // Keep underline for clickable text
+                // ds.color = ContextCompat.getColor(this@SignUpActivity, R.color.blue) // Optional: highlight link in blue, define R.color.blue if needed
+            }
+        }
+        val privacyPolicyStart = privacyText.indexOf("Privacy Policy")
+        val privacyPolicyEnd = privacyPolicyStart + "Privacy Policy".length
+        privacyPolicySpannable.setSpan(privacyPolicyClickableSpan, privacyPolicyStart, privacyPolicyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        binding.checkBoxPrivacy.apply {
+            text = privacyPolicySpannable
+            movementMethod = LinkMovementMethod.getInstance() // Make links clickable
+        }
+
+        // Terms and Conditions CheckBox
+        val termsText = "I agree to the Terms and Conditions"
+        val termsAndConditionsSpannable = SpannableString(termsText)
+        val termsAndConditionsClickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                // Navigate to Terms and Conditions Activity
+                startActivity(Intent(this@SignUpActivity, TermsActivity::class.java))
+            }
+            // Optional: Customize link appearance
+            override fun updateDrawState(ds: android.text.TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true // Keep underline for clickable text
+                // ds.color = ContextCompat.getColor(this@SignUpActivity, R.color.blue) // Optional: highlight link in blue, define R.color.blue if needed
+            }
+        }
+        val termsStart = termsText.indexOf("Terms and Conditions")
+        val termsEnd = termsStart + "Terms and Conditions".length
+        termsAndConditionsSpannable.setSpan(termsAndConditionsClickableSpan, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        binding.checkBoxTerms.apply {
+            text = termsAndConditionsSpannable
+            movementMethod = LinkMovementMethod.getInstance() // Make links clickable
+        }
+    }
+
     private fun observeViewModel() {
-        with(binding) { // Use 'with(binding)' to simplify access
+        with(binding) {
             lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
                     // Loading state
@@ -143,7 +186,7 @@ class SignUpActivity : AppCompatActivity() {
                         }
                     }
 
-                    // Navigation and Toast messages remain the same
+                    // Navigation and Toast messages
                     launch {
                         viewModel.navigateToLogin.collect { event ->
                             event?.getContentIfNotHandled()?.let {
@@ -160,12 +203,7 @@ class SignUpActivity : AppCompatActivity() {
                         }
                     }
 
-                    launch {
-                        viewModel.termsError.collect { error ->
-                            binding.termsErrorTextView.text = error
-                            binding.termsErrorTextView.isVisible = (error != null)
-                        }
-                    }
+                    // No longer observing specific terms/privacy error TextViews, handled by toastMessage
                 }
             }
         }

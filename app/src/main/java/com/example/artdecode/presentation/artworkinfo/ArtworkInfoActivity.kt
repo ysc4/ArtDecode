@@ -3,6 +3,7 @@ package com.example.artdecode.presentation.artworkinfo
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
@@ -21,7 +22,6 @@ import com.example.artdecode.presentation.scan.ScanActivity
 import com.example.artdecode.presentation.report.ReportActivity
 import com.example.artdecode.presentation.login.LoginActivity
 import com.example.artdecode.utils.ArtStyleDescriptionProvider
-import com.example.artdecode.presentation.artworkinfo.ArtworkInfoUiState
 
 import kotlinx.coroutines.launch
 
@@ -31,7 +31,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     // UI elements
     private lateinit var artworkImageView: ImageView
-    private lateinit var favoriteButton: ImageButton
+    // private lateinit var favoriteButton: ImageButton // REMOVED: Favorite button
     private lateinit var artworkStyleTextView: TextView
     private lateinit var confidenceScoreTextView: TextView
     private lateinit var similarArtworksContainer: LinearLayout
@@ -94,7 +94,7 @@ class ArtworkInfoActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         artworkImageView = findViewById<ImageView>(R.id.artworkImage)
-        favoriteButton = findViewById<ImageButton>(R.id.favoriteButton)
+        // favoriteButton = findViewById<ImageButton>(R.id.favoriteButton) // REMOVED: Initialize favorite button
         artworkStyleTextView = findViewById<TextView>(R.id.artworkStyle)
         confidenceScoreTextView = findViewById<TextView>(R.id.confScore)
         similarArtworksContainer = findViewById<LinearLayout>(R.id.similarArtworksContainer)
@@ -109,9 +109,10 @@ class ArtworkInfoActivity : AppCompatActivity() {
         backButton.setOnClickListener {
             viewModel.onBackClick()
         }
-        favoriteButton.setOnClickListener {
-            viewModel.toggleFavorite()
-        }
+        // REMOVED: Favorite button click listener
+        // favoriteButton.setOnClickListener {
+        //     viewModel.toggleFavorite()
+        // }
         scanMoreButton.setOnClickListener {
             viewModel.onScanMoreClick()
         }
@@ -135,7 +136,11 @@ class ArtworkInfoActivity : AppCompatActivity() {
     }
 
     private fun updateUI(uiState: ArtworkInfoUiState) {
+        Log.d("ArtworkInfoActivity", "updateUI called. isLoading: ${uiState.isLoading}, artwork present: ${uiState.artwork != null}")
+
         uiState.artwork?.let { artwork ->
+            // Log.d("ArtworkInfoActivity", "Artwork ID: ${artwork.id}, isFavorite: ${artwork.isFavorite}") // REMOVED: Favorite log
+
             // Load the captured artwork image
             artwork.imageUri?.let { uriString ->
                 Glide.with(this)
@@ -159,15 +164,20 @@ class ArtworkInfoActivity : AppCompatActivity() {
             val styleImageResId = ArtStyleDescriptionProvider.getStyleImageResId(artwork.artStyle)
             artStyleImageView.setImageResource(styleImageResId)
 
-            favoriteButton.setImageResource(if (artwork.isFavorite) R.drawable.active_heart else R.drawable.inactive_heart)
+            // REMOVED: Favorite button image setting
+            // val favoriteIconRes = if (artwork.isFavorite) R.drawable.active_heart else R.drawable.inactive_heart
+            // Log.d("ArtworkInfoActivity", "Setting favorite button image. isFavorite: ${artwork.isFavorite}, drawable: ${resources.getResourceEntryName(favoriteIconRes)}")
+            // favoriteButton.setImageResource(favoriteIconRes)
 
         } ?: run {
+            Log.d("ArtworkInfoActivity", "Artwork is null in UI state.")
             artworkImageView.setImageResource(R.drawable.placeholder_image)
             artworkStyleTextView.text = "N/A"
             confidenceScoreTextView.text = "N/A"
             styleDescriptionTextView.text = "Artwork details not available."
             artStyleImageView.setImageResource(R.drawable.default_art_style_image)
-            favoriteButton.setImageResource(R.drawable.inactive_heart)
+            // REMOVED: Default favorite button image setting
+            // favoriteButton.setImageResource(R.drawable.inactive_heart)
         }
 
         similarArtworksContainer.removeAllViews()

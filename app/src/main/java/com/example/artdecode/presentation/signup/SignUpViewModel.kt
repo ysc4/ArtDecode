@@ -3,7 +3,7 @@ package com.example.artdecode.presentation.signup
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.artdecode.utils.Event
+import com.example.artdecode.utils.Event // Ensure you have this Event class
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
@@ -40,11 +40,6 @@ class SignUpViewModel : ViewModel() {
     private val _confirmPasswordError = MutableStateFlow<String?>(null)
     val confirmPasswordError: StateFlow<String?> = _confirmPasswordError.asStateFlow()
 
-    // New StateFlow for terms and conditions error
-    private val _termsError = MutableStateFlow<String?>(null)
-    val termsError: StateFlow<String?> = _termsError.asStateFlow()
-
-
     private val _navigateToLogin = MutableStateFlow<Event<Unit>?>(null)
     val navigateToLogin: StateFlow<Event<Unit>?> = _navigateToLogin.asStateFlow()
 
@@ -63,13 +58,14 @@ class SignUpViewModel : ViewModel() {
         username: String,
         password: String,
         confirmPassword: String,
-        agreedToTerms: Boolean // New parameter
+        agreedToPrivacyPolicy: Boolean, // New parameter
+        agreedToTerms: Boolean // Existing parameter
     ) {
-        if (!validateInputs(email, username, password, confirmPassword, agreedToTerms)) return // Pass new parameter
+        if (!validateInputs(email, username, password, confirmPassword, agreedToPrivacyPolicy, agreedToTerms)) return
 
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null // Clear any general error before starting
+            _errorMessage.value = null
 
             try {
                 // Create user with email and password
@@ -85,8 +81,6 @@ class SignUpViewModel : ViewModel() {
                     try {
                         user.updateProfile(profileUpdates).await()
                     } catch (e: Exception) {
-                        // Profile update failed, but continue with database storage if account was created
-                        // Log this or show a specific toast if desired
                         _toastMessage.value = Event("Account created, but failed to set username.")
                     }
 
@@ -108,7 +102,6 @@ class SignUpViewModel : ViewModel() {
                         _navigateToLogin.value = Event(Unit)
 
                     } catch (e: Exception) {
-                        // Database storage failed, but auth user was created
                         _errorMessage.value = "Account created but failed to save user data: ${e.message}"
                         _navigateToLogin.value = Event(Unit)
                     }
@@ -150,78 +143,63 @@ class SignUpViewModel : ViewModel() {
         }
     }
 
-    // Modified validateInputs to include the terms checkbox check
+    // Modified validateInputs to include both checkbox checks
     private fun validateInputs(
         email: String,
         username: String,
         password: String,
         confirmPassword: String,
-        agreedToTerms: Boolean // New parameter
+        agreedToPrivacyPolicy: Boolean,
+        agreedToTerms: Boolean
     ): Boolean {
-        clearErrors() // Clear all errors at the start
+        clearErrors()
         var hasError = false
 
+        // Basic input validation
         when {
-            email.isBlank() -> {
-                _emailError.value = "Email is required"
-                hasError = true
-            }
-            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
-                _emailError.value = "Please enter a valid email"
-                hasError = true
-            }
+            email.isBlank() -> { _emailError.value = "Email is required"; hasError = true }
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> { _emailError.value = "Please enter a valid email"; hasError = true }
         }
 
         when {
-            username.isBlank() -> {
-                _usernameError.value = "Username is required"
-                hasError = true
-            }
-            username.length < 3 -> {
-                _usernameError.value = "Username must be at least 3 characters"
-                hasError = true
-            }
+            username.isBlank() -> { _usernameError.value = "Username is required"; hasError = true }
+            username.length < 3 -> { _usernameError.value = "Username must be at least 3 characters"; hasError = true }
         }
 
         when {
-            password.isBlank() -> {
-                _passwordError.value = "Password is required"
-                hasError = true
-            }
-            password.length < 6 -> {
-                _passwordError.value = "Password must be at least 6 characters"
-                hasError = true
-            }
+            password.isBlank() -> { _passwordError.value = "Password is required"; hasError = true }
+            password.length < 6 -> { _passwordError.value = "Password must be at least 6 characters"; hasError = true }
         }
 
         when {
-            confirmPassword.isBlank() -> {
-                _confirmPasswordError.value = "Please confirm your password"
-                hasError = true
-            }
-            password != confirmPassword -> {
-                _confirmPasswordError.value = "Passwords do not match"
-                hasError = true
-            }
+            confirmPassword.isBlank() -> { _confirmPasswordError.value = "Please confirm your password"; hasError = true }
+            password != confirmPassword -> { _confirmPasswordError.value = "Passwords do not match"; hasError = true }
         }
 
-        // New validation for terms and conditions
+        // New validation for privacy policy - IMPORTANT: order matters for toast messages
+        if (!agreedToPrivacyPolicy) {
+            _toastMessage.value = Event("You must agree to the Privacy Policy.")
+            hasError = true
+        }
+
+        // Validation for terms and conditions
+        // This will overwrite the previous toast if both are not checked, showing the last one.
         if (!agreedToTerms) {
-            _termsError.value = "You must agree to the Terms and Conditions"
+            _toastMessage.value = Event("You must agree to the Terms and Conditions.")
             hasError = true
         }
 
         return !hasError
     }
 
-    // Modified clearErrors to include the new terms error
+    // Modified clearErrors to ensure all errors are cleared
     private fun clearErrors() {
         _emailError.value = null
         _usernameError.value = null
         _passwordError.value = null
         _confirmPasswordError.value = null
         _errorMessage.value = null
-        _termsError.value = null // Clear terms error
+        // _toastMessage is an Event, it clears after consumption, no need to clear here.
     }
 
     private fun getErrorMessage(exception: Throwable): String {
@@ -238,9 +216,7 @@ class SignUpViewModel : ViewModel() {
     }
 
     fun clearMessages() {
-        _toastMessage.value = null
+        _toastMessage.value = null // This should be reset when the activity is destroyed or new operation starts
         _navigateToLogin.value = null
-        // Potentially clear other errors if needed on destroy/recreation
-        // clearErrors() // Uncomment if you want errors to disappear on navigation away
     }
 }

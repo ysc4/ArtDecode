@@ -15,8 +15,9 @@ import com.example.artdecode.data.model.Artwork // Import the combined Artwork d
 import com.example.artdecode.data.model.RecyclerViewItem
 
 class ArtworkAdapter(
-    private val onItemClick: (String?) -> Unit,
-    private val onFavoriteClick: (String?) -> Unit
+    private val onItemClick: (String?) -> Unit
+    // REMOVED: onFavoriteClick lambda from constructor
+    // private val onFavoriteClick: (String?) -> Unit
 ) : ListAdapter<RecyclerViewItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
@@ -41,7 +42,8 @@ class ArtworkAdapter(
             VIEW_TYPE_ARTWORK -> {
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.item_collection, parent, false) // Your artwork card layout
-                ArtworkViewHolder(view, onItemClick, onFavoriteClick)
+                // REMOVED: onFavoriteClick from ArtworkViewHolder constructor
+                ArtworkViewHolder(view, onItemClick)
             }
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
         }
@@ -65,15 +67,17 @@ class ArtworkAdapter(
     class ArtworkViewHolder(
         itemView: View,
         // Ensure callbacks use String? for IDs
-        private val onItemClick: (String?) -> Unit,
-        private val onFavoriteClick: (String?) -> Unit
+        private val onItemClick: (String?) -> Unit
+        // REMOVED: onFavoriteClick from ArtworkViewHolder constructor
+        // private val onFavoriteClick: (String?) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val artworkImage: ImageView = itemView.findViewById(R.id.artworkImage)
         // Corrected TextView IDs to match item_collection.xml
         private val artStyleTextView: TextView = itemView.findViewById(R.id.artStyle)
         private val confidenceTextView: TextView = itemView.findViewById(R.id.confidenceScore)
-        private val favoriteIcon: ImageView = itemView.findViewById(R.id.favoriteButton)
+        // REMOVED: favoriteIcon ImageView
+        // private val favoriteIcon: ImageView = itemView.findViewById(R.id.favoriteButton)
 
         fun bind(artwork: Artwork) { // Bind with the combined Artwork object
             // Load image using Glide, handling Uri String
@@ -93,17 +97,22 @@ class ArtworkAdapter(
                 String.format("%.2f%% Confidence", it * 100) // Format to percentage
             } ?: "N/A Confidence"
 
-            // Set the favorite icon based on state
+            // REMOVED: Favorite icon setting logic
+            /*
             favoriteIcon.setImageResource(
                 if (artwork.isFavorite) R.drawable.active_heart // Assuming these drawables exist
                 else R.drawable.inactive_heart
             )
+            */
 
-            // Set click listeners - now passing String? ID
+            // REMOVED: Favorite icon click listener
+            /*
             favoriteIcon.setOnClickListener {
                 onFavoriteClick(artwork.id)
             }
+            */
 
+            // Set click listener for the entire item
             itemView.setOnClickListener {
                 onItemClick(artwork.id)
             }

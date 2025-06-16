@@ -6,20 +6,14 @@ import kotlinx.coroutines.flow.Flow
 interface ArtworkRepository {
     fun getArtworks(): Flow<List<Artwork>>
     suspend fun saveArtwork(artwork: Artwork): Artwork
-    suspend fun getArtworkById(id: String): Artwork? // This remains for one-time fetches if needed
+    suspend fun getArtworkById(id: String): Artwork?
     suspend fun deleteArtwork(artworkId: String)
     fun getSimilarArtworks(artStyle: String, excludeArtworkId: String?): Flow<List<Artwork>>
     fun updateArtworkInFlow(artwork: Artwork) // This utility function is useful for local flow updates
 
-    // --- Changes for Favorite Status Consistency ---
-    // New: Method to get a single artwork as a Flow for live updates
-    fun getArtworkFlowById(artworkId: String): Flow<Artwork?>
-
-    // Ensure toggleFavorite always uses 'isFavorite'
-    suspend fun toggleFavorite(artworkId: String)
-
-    // These might become redundant if getArtworkFlowById is used consistently for display,
-    // but kept for now as they might be used in other logic. Ensure they also use 'isFavorite'.
-    suspend fun getFavoriteState(artworkId: String): Boolean
-    suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean)
+    // REMOVED: Methods for Favorite Status
+    fun getArtworkFlowById(artworkId: String): Flow<Artwork?> // No longer strictly needed for a 'favorite' flow, but still useful for general live artwork data
+    // suspend fun toggleFavorite(artworkId: String)
+    // suspend fun getFavoriteState(artworkId: String): Boolean
+    // suspend fun saveFavoriteState(artworkId: String, isFavorite: Boolean)
 }

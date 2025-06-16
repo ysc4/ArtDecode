@@ -77,10 +77,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private var password: String = ""
 
     init {
+        // Always sign out the current user when the ViewModel is initialized
+        // This ensures the login screen always starts from a logged-out state.
         auth.signOut()
         Log.d(TAG, "FirebaseAuth signed out at ViewModel init.")
     }
-
 
     private fun fetchUserInfoAndNavigate(firebaseUser: FirebaseUser) {
         val userRef = database.getReference("users").child(firebaseUser.uid)
@@ -126,12 +127,13 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onLoginClicked() {
+        // Basic input validation before hitting Firebase
         if (email.isEmpty()) {
-            _loginState.value = LoginState.EmailError(getApplication<Application>().getString(R.string.incorrect_email))
+            _loginState.value = LoginState.EmailError(getApplication<Application>().getString(R.string.incorrect_email_format))
             return
         }
         if (password.isEmpty()) {
-            _loginState.value = LoginState.PasswordError(getApplication<Application>().getString(R.string.incorrect_password))
+            _loginState.value = LoginState.PasswordError(getApplication<Application>().getString(R.string.password_required))
             return
         }
 
@@ -142,41 +144,63 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 val result = auth.signInWithEmailAndPassword(email, password).await()
                 val user = result.user
                 if (user != null) {
-                    Log.d(TAG, "signInWithEmail:success")
+                    Log.d(TAG, "signInWithEmail:success for user ${user.uid}")
                     _loginState.value = LoginState.Success(user)
                     fetchUserInfoAndNavigate(user)
                 } else {
+                    Log.e(TAG, "Login successful but user data is null for email: $email")
                     _loginState.value = LoginState.Error("Login successful but user data is null.")
                 }
             } catch (exception: Exception) {
-                Log.w(TAG, "signInWithEmail:failure", exception)
-                val app = getApplication<Application>()
-                when (exception) {
-                    is FirebaseAuthInvalidCredentialsException -> {
-                        _loginState.value = LoginState.PasswordError(app.getString(R.string.incorrect_password))
-                    }
-                    is FirebaseAuthInvalidUserException -> {
-                        val errorCode = exception.errorCode
-                        when (errorCode) {
-                            "ERROR_USER_NOT_FOUND" -> {
-                                _loginState.value = LoginState.EmailError(app.getString(R.string.user_not_found))
-                            }
-                            "ERROR_INVALID_EMAIL" -> {
-                                _loginState.value = LoginState.EmailError(app.getString(R.string.incorrect_email))
-                            }
-                            else -> {
-                                _loginState.value = LoginState.Error("User account issue. Please contact support.")
-                            }
-                        }
-                    }
-                    else -> {
-                        Log.e(TAG, "signInWithEmail: unknown error type: ${exception.javaClass.name}, message: ${exception.message}")
-                        _loginState.value = LoginState.Error("Authentication failed. Please try again.")
-                    }
-                }
+                Log.w(TAG, "signInWithEmail:failure for email $email", exception)
+                handleFirebaseAuthException(exception)
             }
         }
     }
+
+    private fun handleFirebaseAuthException(exception: Exception) {
+        val app = getApplication<Application>()
+        when (exception) {
+            is FirebaseAuthInvalidCredentialsException -> {
+                // This can mean wrong password OR malformed email
+                val errorCode = exception.errorCode
+                when (errorCode) {
+                    "ERROR_INVALID_EMAIL" -> {
+                        // Specifically for malformed email format (e.g., "abc" instead of "abc@def.com")
+                        _loginState.value = LoginState.EmailError(app.getString(R.string.incorrect_email_format))
+                    }
+                    "ERROR_WRONG_PASSWORD" -> {
+                        // Specific for correct email, but wrong password
+                        _loginState.value = LoginState.PasswordError(app.getString(R.string.incorrect_password))
+                    }
+                    else -> {
+                        // Other invalid credential issues
+                        _loginState.value = LoginState.Error(app.getString(R.string.authentication_failed_generic) + ": ${exception.message}")
+                    }
+                }
+            }
+            is FirebaseAuthInvalidUserException -> {
+                // This typically means the user email does not exist, or is disabled.
+                val errorCode = exception.errorCode
+                when (errorCode) {
+                    "ERROR_USER_NOT_FOUND" -> {
+                        _loginState.value = LoginState.EmailError(app.getString(R.string.user_not_found))
+                    }
+                    "ERROR_USER_DISABLED" -> {
+                        _loginState.value = LoginState.Error(app.getString(R.string.user_disabled))
+                    }
+                    else -> {
+                        _loginState.value = LoginState.Error(app.getString(R.string.authentication_failed_generic) + ": ${exception.message}")
+                    }
+                }
+            }
+            else -> {
+                Log.e(TAG, "signInWithEmail: unknown error type: ${exception.javaClass.name}, message: ${exception.message}")
+                _loginState.value = LoginState.Error(app.getString(R.string.authentication_failed_generic) + ". Please try again.")
+            }
+        }
+    }
+
 
     fun onGoogleSignInClicked() {
         _loginState.value = LoginState.Loading

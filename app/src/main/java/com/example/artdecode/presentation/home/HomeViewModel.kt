@@ -69,14 +69,6 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(navigateToArtworkDetail = artworkId)
     }
 
-    fun onFavoriteClick(artworkId: String?) {
-        viewModelScope.launch {
-            artworkId?.let { id ->
-                artworkRepository.toggleFavorite(id)
-            }
-        }
-    }
-
     fun deleteArtwork(artworkId: String?) {
         viewModelScope.launch {
             artworkId?.let { id ->
@@ -95,9 +87,3 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(navigateToArtworkDetail = null)
     }
 }
-
-data class HomeUiState(
-    val items: List<RecyclerViewItem> = emptyList(),
-    val isLoading: Boolean = false,
-    val navigateToArtworkDetail: String? = null
-)
