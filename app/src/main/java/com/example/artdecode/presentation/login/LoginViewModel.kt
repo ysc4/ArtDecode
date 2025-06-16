@@ -1,7 +1,8 @@
-package com.example.artdecode
+package com.example.artdecode.presentation.login
 
 import android.app.Application
 import android.util.Log
+import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.credentials.CredentialManager
@@ -9,6 +10,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialException
+import com.example.artdecode.R
 import com.example.artdecode.utils.Event
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -26,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
 // Data class to hold user information
 data class UserInfo(
@@ -40,8 +44,8 @@ sealed class LoginState {
     object Loading : LoginState()
     data class Success(val user: FirebaseUser) : LoginState()
     data class Error(val message: String) : LoginState()
-    data class EmailError(val message: String) : LoginState()
-    data class PasswordError(val message: String) : LoginState()
+    // Specific error types for direct input feedback
+    data class InputError(val emailError: String? = null, val passwordError: String? = null) : LoginState()
     data class GoogleSignInError(val message: String) : LoginState()
 }
 
@@ -66,8 +70,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val _navigateToSignUp = MutableStateFlow<Event<Unit>?>(null)
     val navigateToSignUp: StateFlow<Event<Unit>?> = _navigateToSignUp.asStateFlow()
 
-    private val _toastMessage = MutableStateFlow<Event<String>?>(null)
-    val toastMessage: StateFlow<Event<String>?> = _toastMessage.asStateFlow()
+    // NEW: SharedFlow for Snackbar messages
+    private val _snackbarMessage = MutableSharedFlow<Event<String>>()
+    val snackbarMessage: SharedFlow<Event<String>> = _snackbarMessage
 
     private val _requestGoogleSignIn = MutableStateFlow<Event<GetCredentialRequest>?>(null)
     val requestGoogleSignIn: StateFlow<Event<GetCredentialRequest>?> = _requestGoogleSignIn.asStateFlow()
@@ -110,30 +115,58 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     username = firebaseUser.displayName // Fallback to display name if available
                 )
                 _navigateToHome.value = Event(userInfo)
+                showSnackbar("Failed to retrieve full user information.")
             }
         })
     }
 
     fun updateEmail(newEmail: String) {
         email = newEmail.trim()
+        // Clear previous email-related errors when user starts typing
+        if (_loginState.value is LoginState.InputError) {
+            val currentErrorState = _loginState.value as LoginState.InputError
+            if (currentErrorState.emailError != null) {
+                _loginState.value = currentErrorState.copy(emailError = null)
+            }
+        }
     }
 
     fun updatePassword(newPassword: String) {
         password = newPassword
+        // Clear previous password-related errors when user starts typing
+        if (_loginState.value is LoginState.InputError) {
+            val currentErrorState = _loginState.value as LoginState.InputError
+            if (currentErrorState.passwordError != null) {
+                _loginState.value = currentErrorState.copy(passwordError = null)
+            }
+        }
     }
 
-    fun showToast(message: String) {
-        _toastMessage.value = Event(message)
+    fun showSnackbar(message: String) {
+        viewModelScope.launch {
+            _snackbarMessage.emit(Event(message))
+        }
     }
 
     fun onLoginClicked() {
-        // Basic input validation before hitting Firebase
+        val app = getApplication<Application>()
+        var emailError: String? = null
+        var passwordError: String? = null
+
         if (email.isEmpty()) {
-            _loginState.value = LoginState.EmailError(getApplication<Application>().getString(R.string.incorrect_email_format))
-            return
+            emailError = app.getString(R.string.email_required) // More specific message
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailError = app.getString(R.string.incorrect_email_format)
         }
+
         if (password.isEmpty()) {
-            _loginState.value = LoginState.PasswordError(getApplication<Application>().getString(R.string.password_required))
+            passwordError = app.getString(R.string.password_required)
+        } else if (password.length < 6) { // Example: Add a minimum password length check
+            passwordError = app.getString(R.string.password_too_short)
+        }
+
+        if (emailError != null || passwordError != null) {
+            _loginState.value = LoginState.InputError(emailError, passwordError)
             return
         }
 
@@ -149,7 +182,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     fetchUserInfoAndNavigate(user)
                 } else {
                     Log.e(TAG, "Login successful but user data is null for email: $email")
-                    _loginState.value = LoginState.Error("Login successful but user data is null.")
+                    val errorMessage = "Login successful but user data is null."
+                    _loginState.value = LoginState.Error(errorMessage)
+                    showSnackbar(errorMessage)
                 }
             } catch (exception: Exception) {
                 Log.w(TAG, "signInWithEmail:failure for email $email", exception)
@@ -160,47 +195,62 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun handleFirebaseAuthException(exception: Exception) {
         val app = getApplication<Application>()
+        Log.e(TAG, "handleFirebaseAuthException: EXCEPTION TYPE: ${exception.javaClass.name}, MESSAGE: ${exception.message}")
+
+        var emailError: String? = null
+        var passwordError: String? = null
+        var generalErrorMessage: String? = null
+
         when (exception) {
             is FirebaseAuthInvalidCredentialsException -> {
-                // This can mean wrong password OR malformed email
                 val errorCode = exception.errorCode
+                Log.e(TAG, "FirebaseAuthInvalidCredentialsException. SPECIFIC ERROR CODE: $errorCode")
                 when (errorCode) {
                     "ERROR_INVALID_EMAIL" -> {
-                        // Specifically for malformed email format (e.g., "abc" instead of "abc@def.com")
-                        _loginState.value = LoginState.EmailError(app.getString(R.string.incorrect_email_format))
+                        emailError = app.getString(R.string.incorrect_email_format)
                     }
                     "ERROR_WRONG_PASSWORD" -> {
-                        // Specific for correct email, but wrong password
-                        _loginState.value = LoginState.PasswordError(app.getString(R.string.incorrect_password))
+                        passwordError = app.getString(R.string.incorrect_password)
                     }
                     else -> {
-                        // Other invalid credential issues
-                        _loginState.value = LoginState.Error(app.getString(R.string.authentication_failed_generic) + ": ${exception.message}")
+                        generalErrorMessage = app.getString(R.string.authentication_failed_generic)
                     }
                 }
             }
             is FirebaseAuthInvalidUserException -> {
-                // This typically means the user email does not exist, or is disabled.
                 val errorCode = exception.errorCode
+                Log.e(TAG, "FirebaseAuthInvalidUserException. SPECIFIC ERROR CODE: $errorCode")
                 when (errorCode) {
                     "ERROR_USER_NOT_FOUND" -> {
-                        _loginState.value = LoginState.EmailError(app.getString(R.string.user_not_found))
+                        emailError = app.getString(R.string.user_not_found)
                     }
                     "ERROR_USER_DISABLED" -> {
-                        _loginState.value = LoginState.Error(app.getString(R.string.user_disabled))
+                        generalErrorMessage = app.getString(R.string.user_disabled)
                     }
                     else -> {
-                        _loginState.value = LoginState.Error(app.getString(R.string.authentication_failed_generic) + ": ${exception.message}")
+                        generalErrorMessage = app.getString(R.string.authentication_failed_generic)
                     }
                 }
             }
             else -> {
-                Log.e(TAG, "signInWithEmail: unknown error type: ${exception.javaClass.name}, message: ${exception.message}")
-                _loginState.value = LoginState.Error(app.getString(R.string.authentication_failed_generic) + ". Please try again.")
+                Log.e(TAG, "Unknown Firebase Exception Type. Message: ${exception.message}")
+                generalErrorMessage = app.getString(R.string.authentication_failed_generic) + ". Please try again."
             }
         }
-    }
 
+        if (emailError != null || passwordError != null) {
+            _loginState.value = LoginState.InputError(emailError, passwordError)
+            val message = emailError ?: (passwordError ?: app.getString(R.string.please_correct_input_errors))
+            showSnackbar(message)
+        } else if (generalErrorMessage != null) {
+            _loginState.value = LoginState.Error(generalErrorMessage)
+            showSnackbar(generalErrorMessage)
+        } else {
+            val fallbackMessage = app.getString(R.string.authentication_failed_generic) + ". Please try again."
+            _loginState.value = LoginState.Error(fallbackMessage)
+            showSnackbar(fallbackMessage)
+        }
+    }
 
     fun onGoogleSignInClicked() {
         _loginState.value = LoginState.Loading
@@ -211,8 +261,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             app.getString(R.string.default_web_client_id)
         } catch (e: Exception) {
             Log.e(TAG, "default_web_client_id not found in strings.xml", e)
-            _loginState.value = LoginState.GoogleSignInError("Configuration error: Missing client ID")
-            _toastMessage.value = Event("Configuration error: Missing client ID")
+            val errorMessage = "Configuration error: Missing client ID"
+            _loginState.value = LoginState.GoogleSignInError(errorMessage)
+            showSnackbar(errorMessage)
             return
         }
 
@@ -233,8 +284,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun handleGoogleSignInResult(result: GetCredentialResponse?) {
         if (result == null) {
-            _loginState.value = LoginState.GoogleSignInError("Google Sign-In failed or was canceled.")
-            _toastMessage.value = Event("Google Sign-In failed or was canceled.")
+            val message = "Google Sign-In failed or was canceled."
+            _loginState.value = LoginState.GoogleSignInError(message)
+            showSnackbar(message)
             return
         }
 
@@ -249,19 +301,22 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         firebaseAuthWithGoogle(googleIdTokenCredential.idToken)
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to create GoogleIdTokenCredential", e)
-                        _loginState.value = LoginState.GoogleSignInError("Failed to process Google credential")
-                        _toastMessage.value = Event("Failed to process Google credential")
+                        val errorMessage = "Failed to process Google credential"
+                        _loginState.value = LoginState.GoogleSignInError(errorMessage)
+                        showSnackbar(errorMessage)
                     }
                 } else {
                     Log.e(TAG, "Unexpected Google credential type: ${credential.type}")
-                    _loginState.value = LoginState.GoogleSignInError("Unexpected Google credential type")
-                    _toastMessage.value = Event("Unexpected Google credential type")
+                    val errorMessage = "Unexpected Google credential type"
+                    _loginState.value = LoginState.GoogleSignInError(errorMessage)
+                    showSnackbar(errorMessage)
                 }
             }
             else -> {
                 Log.e(TAG, "Unexpected Google credential class: ${credential::class.java.simpleName}")
-                _loginState.value = LoginState.GoogleSignInError("Unexpected Google credential format")
-                _toastMessage.value = Event("Unexpected Google credential format")
+                val errorMessage = "Unexpected Google credential format"
+                _loginState.value = LoginState.GoogleSignInError(errorMessage)
+                showSnackbar(errorMessage)
             }
         }
     }
@@ -276,7 +331,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             else -> "Google Sign-In failed: ${e.message}"
         }
         _loginState.value = LoginState.GoogleSignInError(message)
-        _toastMessage.value = Event(message)
+        showSnackbar(message)
     }
 
     private fun firebaseAuthWithGoogle(idToken: String) {
@@ -297,12 +352,15 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
                     fetchUserInfoAndNavigate(user)
                 } else {
-                    _loginState.value = LoginState.Error("Google login successful but user data is null.")
+                    val errorMessage = "Google login successful but user data is null."
+                    _loginState.value = LoginState.Error(errorMessage)
+                    showSnackbar(errorMessage)
                 }
             } catch (exception: Exception) {
                 Log.w(TAG, "Google signInWithCredential:failure", exception)
-                _loginState.value = LoginState.GoogleSignInError("Google Authentication Failed.")
-                _toastMessage.value = Event("Google Authentication Failed.")
+                val errorMessage = "Google Authentication Failed."
+                _loginState.value = LoginState.GoogleSignInError(errorMessage)
+                showSnackbar(errorMessage)
             }
         }
     }
@@ -321,6 +379,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             }
             .addOnFailureListener { exception ->
                 Log.e(TAG, "Failed to save user data", exception)
+                showSnackbar("Failed to save user data: ${exception.localizedMessage}")
             }
     }
 
