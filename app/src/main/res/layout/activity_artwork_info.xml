@@ -186,7 +186,7 @@
                             android:layout_height="25dp"
                             android:layout_marginStart="200dp"
                             android:layout_marginEnd="30dp"
-                            android:background="@color/light_gray"
+                            android:background="@color/gray"
                             android:scaleType="centerInside"
                             app:srcCompat="@drawable/report" />
 
@@ -204,6 +204,7 @@
                 android:layout_marginBottom="15dp"
                 android:fontFamily="@font/poppins_medium"
                 android:text="Abstract Expressionism is a post-1940s art movement focused on spontaneous, emotional expression through non-representational forms. Artists used bold colors and gestures to convey inner feelings. It emphasized the act of painting as a form of personal expression."
+                android:textAlignment="textStart"
                 android:textColor="@color/black"
                 android:textSize="12sp" />
 
